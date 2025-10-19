@@ -1,160 +1,402 @@
-# Fundamentos de React en Next.js: Ciclo de vida, Hooks y Estado
+# Routing en Next.js
 
-En React, la unidad fundamental de construcción es el componente. Hasta ahora se explicó que un componente es una función que devuelve una porción de interfaz (escrita en JSX). Sin embargo, detrás de ese concepto hay más: los componentes siguen un ciclo de vida.
+La navegación (routing) es el mecanismo que permite presentar diferentes pantallas en una aplicación web según la URL. Existen enfoques distintos: recarga completa de documentos (sitios tradicionales), SPA con un router del lado cliente (por ejemplo React + react-router) y routing basado en archivos como el que ofrece Next.js (App Router). Cada enfoque tiene implicaciones en experiencia de usuario, rendimiento y arquitectura.
 
-## Ciclo de vida de un componente funcional
+## Conocimiento necesario previo: app router y pages router
 
-Cada vez que React necesita mostrar o actualizar la interfaz, ejecuta ciertas fases:
+### App Router en Next.js
 
-### 1. Montaje (Mounting):
+En Next.js hoy en día existen dos formas de organizar y manejar las rutas de una aplicación:
 
-Es el momento en que el componente aparece en pantalla por primera vez.
+**Pages Router (el sistema antiguo)**
+**App Router (el sistema nuevo, introducido en Next.js 13)**
 
-React ejecuta la función del componente y pinta el resultado en el navegador.
+#### 1. Pages Router (antiguo)
 
-Aquí suele ser necesario inicializar datos o hacer llamadas a APIs.
+- Se usaba la carpeta `pages/`.
+- Cada archivo dentro de `pages/` se convertía en una ruta automáticamente.
+  - `pages/index.tsx` → `/`
+  - `pages/about.tsx` → `/about`
+  - `pages/users/[id].tsx` → `/users/:id`
+- Todo era Client Components por defecto.
+- Se necesitaba usar librerías como `getServerSideProps` o `getStaticProps` para cargar datos en el servidor.
 
-### 2. Actualización (Updating):
+#### 2. App Router (nuevo, recomendado)
 
-Ocurre cada vez que cambian las props o el estado del componente.
+- Se usa la carpeta `app/` en lugar de `pages/`.
+- Cada carpeta dentro de `app/` representa una ruta.
+- Se introducen los Server Components por defecto, lo que hace más fácil cargar datos directamente desde el servidor.
+- Aparecen archivos reservados como `layout.tsx`, `loading.tsx`, `not-found.tsx`, etc.
+- Permite anidar layouts, segmentación de rutas, y manejo más flexible de datos.
 
-React vuelve a ejecutar la función y compara el resultado nuevo con el anterior para decidir qué actualizar en el DOM.
+**TODOS los ejemplos, código y explicaciones que veamos, fueron, son y serán para el app router, por lo que estos items son solo a modo informativo**
 
-### 3. Desmontaje (Unmounting):
+## Conocimiento necesario previo: client components y server components
 
-Es el momento en que el componente desaparece de la pantalla (por ejemplo, si se navega a otra página).
+En Next.js 13+ (con la carpeta `app/`), cada archivo de React puede ser tratado de dos formas distintas:
 
-Aquí se limpian recursos como timers, suscripciones o listeners de eventos.
+- **Server Component** (por defecto)
+- **Client Component** (cuando lo indicamos explícitamente)
 
-En los componentes de clase existían métodos especiales (componentDidMount, componentDidUpdate, componentWillUnmount).
-En los componentes de función modernos, estas fases se controlan con los hooks, principalmente useEffect.
+Esto es importante porque define dónde se ejecuta el código React: en el servidor o en el navegador.
 
-## ¿Qué son los hooks?
+### 1. Server Components (por defecto)
 
-Los hooks son funciones especiales que permiten usar las capacidades internas de React (estado, ciclo de vida, contexto, etc.) dentro de componentes de función.
+- Se ejecutan en el servidor antes de enviar el HTML al navegador.
+- Son ideales para cargar datos desde una API, base de datos o archivo.
+- Mejoran la performance porque el navegador recibe HTML ya procesado.
+- No pueden usar hooks que dependen del navegador (`useState`, `useEffect`, `useRef`).
+- Sí pueden ser `async`, y hacer `await` a promesas sin problemas.
 
-- Todos los hooks empiezan con `use`.
-- Se deben llamar siempre en el nivel superior del componente (no dentro de condicionales o loops).
+**Ejemplo:**
 
-React ofrece hooks básicos como:
+```typescript
+// app/users/[id]/page.tsx
+export default async function UserPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
-- **useState**: manejar valores dinámicos y re-renderizar cuando cambian.
-- **useEffect**: manejar efectos secundarios (llamadas a APIs, timers, suscripciones, etc.).
-- **useContext**: compartir datos globales sin necesidad de pasar props en cada nivel.
-- **useRef**: guardar valores que persisten entre renders sin provocar re-render.
-- **useReducer**: alternativa a useState cuando el estado es complejo.
+  // Llamada a una API en el servidor
+  const res = await fetch(`https://jsonplaceholder.typicode.com/users/${id}`);
+  const user = await res.json();
 
-Más adelante se pueden crear custom hooks, que combinan lógica reutilizable.
+  return <div>Nombre: {user.name}</div>;
+}
+```
 
-## El hook useState
+En este caso:
 
-Se utiliza para manejar el estado interno de un componente. El estado es cualquier dato que cambia con el tiempo y que, al hacerlo, provoca que el componente se vuelva a renderizar.
+1. El servidor de Next.js pide los datos de la API.
+2. Renderiza el HTML con el nombre del usuario.
+3. El navegador recibe ese HTML ya listo (rápido y eficiente).
 
-```javascript
-import { useState } from "react";
+### 2. Client Components
 
-export default function Contador() {
-  // contador = valor actual
-  // setContador = función que lo actualiza
-  const [contador, setContador] = useState<number>(0);
+- Se ejecutan en el navegador.
+- Necesarios cuando queremos interactividad: usar `useState`, `useEffect`, manejar eventos del usuario, etc.
+- Se declaran agregando `"use client"` al inicio del archivo.
+- No pueden ser `async` en la definición del componente.
+- Para acceder a parámetros de la ruta se usa el hook `useParams` de `next/navigation`.
+
+**Ejemplo:**
+
+```typescript
+"use client";
+
+import { useParams } from "next/navigation";
+
+export default function UserProfile() {
+  const { id } = useParams<{ id: string }>();
 
   return (
     <div>
-      <p>Contador: {contador}</p>
-      <button onClick={() => setContador(contador + 1)}>Incrementar</button>
+      <p>Página del usuario con ID: {id}</p>
+      <button onClick={() => alert("Botón clickeado")}>Click</button>
     </div>
   );
 }
 ```
 
-Cada vez que se llama a `setContador`, React vuelve a ejecutar el componente y muestra el nuevo valor.
+En este caso:
 
-El estado es privado al componente; no puede ser modificado directamente desde fuera, solo mediante props o funciones.
+1. El HTML inicial ya vino del servidor.
+2. Pero este componente se hidrata en el navegador y puede manejar clicks o estado.
 
-## El hook useEffect
+## Comparación conceptual (Vanilla JS, React + librería, Next.js)
 
-Permite trabajar con efectos secundarios, es decir, con operaciones que afectan o dependen de algo externo al renderizado puro.
+### Vanilla JS (navegación tradicional / SPA con History API)
 
-Su sintaxis es:
+En páginas estáticas con enlaces `<a href="/ruta">` el navegador solicita al servidor un HTML nuevo y recarga la página completa.
 
-```javascript
-useEffect(() => {
-  // Acción a ejecutar
-  return () => {
-    // Cleanup opcional
-  };
-}, [dependencias]);
-```
+En SPAs implementadas con JavaScript "a mano", la navegación se gestiona internamente: se interceptan clicks, se modifica la URL con `history.pushState()` y se responde a `popstate` para renderizar las vistas sin recarga. Esa técnica evita recargas completas pero requiere implementar por cuenta propia el enrutador, la gestión del estado y las transiciones.
 
-El segundo parámetro, el array de dependencias, define cuándo se ejecuta el efecto:
+En este repositorio de ejemplo en Vanilla JS se puede ver un ejemplo. Basicamente se utiliza Express, una libreria de Node.js pero para desarrollar APIs, y se sirve una ruta "/*", donde para cualquier ruta se "sirve" el archivo index.js con todo el código Javascript necesario para la app web, y luego la navegación se maneja utilizando las APIs del navegador (mencionadas en la primera clase presencial).
 
-- **Array vacío []**: el efecto se ejecuta una sola vez, al montar el componente. Ideal para cargar datos iniciales desde una API.
-- **Dependencias [x, y]**: el efecto se ejecuta cada vez que cambien x o y. Útil cuando la acción depende de una variable de estado o de props.
-- **Sin array**: el efecto se ejecuta en cada renderizado. Esto rara vez es lo que se desea, ya que puede afectar el rendimiento.
+### React con librería de routing (por ejemplo react-router-dom)
 
-### Ejemplo práctico:
+React proporciona la renderización de UI; para navegación cliente se instala una librería que expone componentes y hooks (`<BrowserRouter>`, `<Routes>`, `<Route>`, `<Link>`, `useNavigate`).
 
-```javascript
-import { useEffect, useState } from "react";
+**Ventaja:** control fino, extensibilidad (guards, nested routes, programmatic navigation). Necesita configuración (instalación, wrappers).
 
-export default function Reloj() {
-  const [hora, setHora] = useState<string>("");
+**Comportamiento:** la librería intercepta clicks y usa History API para cambiar la URL y renderizar el componente correspondiente sin recarga. Lo hace con una intervención minima del desarrollador, a diferencia del item anterior donde todo debia hacerse manualmente.
 
-  // Solo al montar
-  useEffect(() => {
-    const ahora = new Date().toLocaleTimeString();
-    setHora(ahora);
-  }, []);
+### Next.js (File-based routing — App Router)
 
-  return <p>Hora actual: {hora}</p>;
+Next.js crea rutas a partir de la estructura de archivos en `app/`. Cada carpeta/archivo con `page.tsx` corresponde a una ruta.
+
+Soporta rutas estáticas y dinámicas (`[id]`), además de varios archivos especiales (layouts, loading, error, not-found, middleware, route handlers).
+
+**Ventaja:** se reduce el boilerplate de routing, hay optimizaciones automáticas (splitting, prefetching, streaming) y se integra renderizado en servidor y API handlers dentro del mismo proyecto. La navegación interna se realiza sin recarga completa y Next.js prefetches y gestiona transiciones.
+
+## Cómo funciona la navegación en Next.js
+
+Cuando un usuario cambia de página en una aplicación web existen dos maneras fundamentales en que puede ocurrir esto:
+
+### 1. Recarga completa (comportamiento tradicional)
+El navegador solicita al servidor un nuevo documento HTML y vuelve a cargar toda la página. Esto es lo que sucede si se hace clic en un enlace `<a href="/otra-pagina">` y no hay nada que lo intercepte. Se pierde el estado en memoria (variables en JavaScript, formularios no reseteados, etc.).
+
+### 2. Navegación cliente (Single Page Application - SPA)
+La aplicación intercepta el clic y cambia lo que se muestra sin recargar todo el documento. Para eso se usan dos piezas clave:
+
+- **History API del navegador:** es una API nativa del navegador. Permite cambiar la URL sin recargar la página mediante `history.pushState()` y reaccionar cuando el usuario usa atrás/adelante con el evento `popstate`. Es la base para que una SPA modifique la URL y al mismo tiempo mantenga la aplicación cargada en memoria.
+- **Renderizado dinámico en el cliente:** el código JavaScript de la app decide qué mostrar según `location.pathname`. Al interceptar clicks y usar `pushState`, la app renderiza la nueva vista sin solicitar todo el HTML al servidor.
+
+## Qué hace Next.js para mejorar la navegación cliente
+
+1. **Interceptación de enlaces:** Cuando se usa `<Link href="/ruta">` Next.js intercepta el clic y hace una navegación cliente (usa History API internamente). Esto evita la recarga completa y mantiene el estado de los componentes que permanecen montados.
+
+2. **Code splitting:** Next.js evita enviar al navegador todo el código de la aplicación de una vez: en vez de eso, divide la aplicación en piezas más pequeñas (cada página/parte tiene su propio código). Cuando el usuario navega, Next.js pide solo la pieza que hace falta y la ejecuta. Piensa en esto como traer solo la página que vas a ver en vez de descargar la aplicación entera en el primer acceso. Esto reduce el tiempo de espera para empezar a usar la app.
+
+3. **Prefetching:** Además, Next.js puede precargar (descargar en segundo plano) la pieza de la página a la que apunta un enlace cuando detecta que el usuario está a punto de hacer clic (por ejemplo, cuando el enlace entra en la pantalla o cuando el usuario pasa el mouse por encima). Si luego el usuario hace clic, esa pieza ya está disponible localmente y la transición es casi instantánea.
+
+4. **Layouts persistentes:** Los layouts (envoltorios persistentes) en Next.js se mantienen montados al navegar entre páginas que los comparten. Esto significa que un navbar o un menú que esté en un `layout.tsx` no se destruye y vuelve a crear en cada navegación; acelera la experiencia y preserva estados (por ejemplo, un menú desplegado permanece desplegado).
+
+### Por qué `<Link>` es más eficiente que un `<a>` normal:
+
+- `<a>` normal provoca recarga completa del documento.
+- `<Link>` activa la navegación cliente (sin recarga) y permite prefetch/precarga y reutilización de layouts, por lo que la transición es más rápida y consume menos recursos del cliente.
+
+## Rutas dinámicas y cómo usarlas
+
+En Next.js (App Router) el sistema de routing está basado en archivos.
+
+- `app/users/page.tsx` → ruta estática `/users`
+
+Para crear rutas dinámicas se usa la sintaxis con corchetes:
+
+- `app/users/[id]/page.tsx` → ruta dinámica `/users/1`, `/users/abc`, etc.
+
+### ¿Cómo recibe datos la ruta dinámica?
+
+Cuando colocas `app/users/[id]/page.tsx`, Next.js invoca el componente de esa página pasando un objeto `params`. Ejemplo en TypeScript:
+
+```typescript
+// app/users/[id]/page.tsx
+export default async function UserPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+  return <div>Usuario con id: {id}</div>
 }
 ```
 
-### Ejemplo con dependencia:
+Es decir, los parametros deben "esperarse" utilizando un `await`. **PERO esto es solo cierto en server components.** Para los client components, los cuales no pueden ser async, se resuelve utilizando un hook de Next:
 
-```javascript
-import { useEffect, useState } from "react";
+```typescript
+"use client";
 
-export default function DependenciaDemo() {
-  const [contador, setContador] = useState<number>(0);
+import { useParams } from "next/navigation";
 
+export default function UserProfile() {
+  const params = useParams<{ id: string }>();
+  // acá params SIEMPRE es sincrónico
+  return <div>User id: {params.id}</div>;
+}
+```
+
+### Enlaces hacia rutas dinámicas
+
+Para generar un enlace hacia esa ruta desde otra página:
+
+```typescript
+import Link from "next/link";
+
+function UsersList() {
+  const users = [{ id: "1", name: "Ana" }, { id: "2", name: "Luis" }];
+
+  return (
+    <ul>
+      {users.map((u) => (
+        <li key={u.id}>
+          <Link href={`/users/${u.id}`}>{u.name}</Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+También se puede navegar programáticamente desde código:
+
+```typescript
+"use client";
+import { useRouter } from "next/navigation";
+
+function IrUsuario({ id }: { id: string }) {
+  const router = useRouter();
+  return <button onClick={() => router.push(`/users/${id}`)}>Ver</button>;
+}
+```
+
+### Recomendaciones de buenas prácticas
+
+Si necesitas usar `useState` o `useEffect` en esa página, hazla cliente colocando `"use client"` al inicio del archivo; en ese caso ya no recibirás `params` como argumento de la función componente (las páginas cliente pueden leer params si el padre se los pasa como prop), por lo que el patrón común es:
+
+Mantener la página como server component que recibe params, luego renderizar un componente cliente hijo pasándole los datos o el id para que el componente cliente ejecute lógica con hooks.
+
+Para rutas con varios segmentos dinámicos se usa `app/[...slug]/page.tsx` (catch-all) y se recibe `params.slug` como array de strings.
+
+## Archivos reservados (App Router) y ejemplos en TypeScript
+
+A continuación se explican los archivos especiales que pueden aparecer en `app/`, con ejemplos de uso y para qué sirve cada uno. Todos los ejemplos están en TypeScript/TSX.
+
+### page.tsx
+
+Es el archivo que representa la ruta. Cada carpeta que contiene `page.tsx` es una ruta accesible.
+
+**Ejemplo (ruta raíz app/page.tsx):**
+
+```typescript
+// app/page.tsx
+import UserList from '@/components/UserList'
+
+export default function HomePage() {
+  return (
+    <main>
+      <h1>Inicio — Listado de usuarios</h1>
+      <UserList />
+    </main>
+  );
+}
+```
+
+`page.tsx` puede ser un componente server (por defecto) o un componente cliente si contiene `"use client"`.
+
+### layout.tsx
+
+Define un layout persistente para todas las páginas dentro del mismo segmento de carpetas. Aquí van navbars, footers, wrappers globales. El `children` contiene la página o layout anidado. Al navegar, los `layout.tsx` que se mantienen no se remountan (conservan estado).
+
+```typescript
+// app/layout.tsx
+import Link from "next/link";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html>
+      <body>
+        <header>
+          <nav>
+            <Link href="/">Lista</Link> | <Link href="/about">About</Link>
+          </nav>
+        </header>
+
+        <main>{children}</main>
+
+        <footer>
+          <p>Texto de relleno: Lorem ipsum dolor sit amet...</p>
+        </footer>
+      </body>
+    </html>
+  );
+}
+```
+
+### loading.tsx
+
+Archivo opcional para mostrar UI inmediata mientras se carga el contenido del segmento (Loading state usando Suspense). Se utiliza para skeletos o spinners.
+
+```typescript
+// app/users/loading.tsx
+export default function UsersLoading() {
+  return <p>Cargando usuarios...</p>;
+}
+```
+
+### not-found.tsx
+
+Para manejar 404s a nivel de segmento; también existe global-not-found (opcional) para 404 global. Se puede invocar `notFound()` desde `next/navigation` para mostrar este UI.
+
+```typescript
+// app/users/not-found.tsx
+export default function UsersNotFound() {
+  return <h2>No se encontraron usuarios</h2>;
+}
+```
+
+### error.tsx
+
+Define un boundary de error para ese segmento. Es un componente client (debe usar `"use client"`) y recibe `error` y `reset`. Permite mostrar fallback UI y recuperar la renderización.
+
+```typescript
+// app/error.tsx
+"use client";
+import { useEffect } from "react";
+
+export default function GlobalError({ error, reset }: { error: Error; reset: () => void }) {
   useEffect(() => {
-    console.log("El contador cambió:", contador);
-  }, [contador]); // Se ejecuta cada vez que cambia contador
+    console.error(error);
+  }, [error]);
 
   return (
     <div>
-      <p>{contador}</p>
-      <button onClick={() => setContador(contador + 1)}>Sumar</button>
+      <h2>Ocurrió un error</h2>
+      <button onClick={() => reset()}>Intentar otra vez</button>
     </div>
   );
 }
 ```
 
-## Renderizar listas y la importancia de key
+### middleware.ts
 
-Cuando se renderizan arrays en React con `.map()`, se debe asignar una propiedad `key` única a cada elemento.
+Middleware que corre antes de que la ruta sea renderizada (Edge Runtime). Útil para autenticación, redirecciones y reescrituras. Se define en la raíz (solo un middleware por proyecto). Lo usaremos en actividades futuras.
 
-La razón es que React utiliza un proceso llamado reconciliación para decidir qué partes del DOM deben actualizarse. Si los elementos no tienen una key clara, React no puede identificar cuál cambió, y terminará volviendo a renderizar toda la lista, lo que puede generar errores visuales y pérdida de rendimiento.
+```typescript
+// middleware.ts
+import { NextResponse, NextRequest } from "next/server";
 
-### Ejemplo incorrecto (sin key):
+export function middleware(request: NextRequest) {
+  const token = request.cookies.get("token")?.value;
+  const url = request.nextUrl.clone();
 
-```javascript
-<ul>
-  {["A", "B", "C"].map((item) => (
-    <li>{item}</li>
-  ))}
-</ul>
+  // ejemplo: redirigir si no hay token y la ruta empieza por /dashboard
+  if (!token && url.pathname.startsWith("/dashboard")) {
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+  return NextResponse.next();
+}
 ```
 
-### Ejemplo correcto (con key):
+### route.ts (Route Handlers — API dentro app/)
 
-```javascript
-<ul>
-  {["A", "B", "C"].map((item, index) => (
-    <li key={index}>{item}</li>
-  ))}
-</ul>
+Define handlers HTTP (GET, POST, etc.) para crear endpoints desde `app/`. Útil cuando se quiere un API endpoint cercano a la lógica de la app. Lo usaremos en actividades futuras.
+
+```typescript
+// app/api/users/route.ts
+import { NextResponse } from "next/server";
+
+export async function GET() {
+  const users = [{ id: 1, name: "María" }, { id: 2, name: "Juan" }];
+  return NextResponse.json(users);
+}
 ```
 
-Aunque se puede usar el index del array como key, lo más recomendable es usar un identificador único proveniente de los datos, como un id.
+## Ejercicio propuesto
+
+Modificación de la actividad anterior para ahora permitir la navegación al detalle de un Pokemon concreto (sumado a la utilización de layout global).
+
+### Crear/usar app/layout.tsx que envuelva todas las páginas. El layout debe contener:
+
+- Un navbar con un Link a la lista principal.
+- Un footer con texto de relleno
+
+### En la página principal (la lista):
+
+- Obtener la lista desde pokeapi.co usando axios.
+- Guardar resultados en estado y renderizar
+- Cada item debe ser una card clickeable que navegue a la ruta dinámica `/pokemon/[id]`
+- Utilizar componentes siempre que se pueda
+- Implementar skeleton para cuando la lista este cargando (puede usar una libreria externa)
+
+### En app/pokemon/[name]/page.tsx:
+
+- Recibir param y obtener información del Pokémon con axios.
+- Mostrar nombre y propiedades básicas (sprites, tipos) en la vista de detalle.
+- Incluir enlace para volver a la lista.
+
+### Nota (informativa) sobre la API y paginación:
+
+El endpoint usa paginación con `limit` y `offset`. Por ejemplo `?limit=30&offset=0` devuelve los primeros 30; para la siguiente página usar `offset=30`, luego `offset=60`, etc.
+
+En esta práctica solo soliciten la primera página (`limit=30&offset=0`). En una actividad futura se trabajará la paginación con botones "Siguiente"/"Anterior" y el uso de offset.

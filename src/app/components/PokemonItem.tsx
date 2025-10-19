@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { useState } from "react";
+import Link from "next/link";
 import { Pokemon } from "@/types/pokemon";
 
 interface PokemonItemProps {
@@ -7,28 +7,25 @@ interface PokemonItemProps {
 }
 
 export default function PokemonItem({ pokemon }: PokemonItemProps) {
-    const [clickCount, setClickCount] = useState(0);
-
-    const handleClick = () => {
-        console.log(`Clicked on ${pokemon.name} (ID: ${pokemon.id})`);
-        setClickCount(prev => prev + 1);
-    };
-
     return (
-        <button 
-            onClick={handleClick}
-            className="w-full bg-white rounded-lg shadow-md p-4 border border-gray-200 hover:shadow-lg hover:bg-gray-50 transition-all duration-200 text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        <Link 
+            href={`/pokemon/${pokemon.id}`}
+            className="w-full bg-white rounded-lg shadow-md p-4 border transition-all duration-200 text-left focus:outline-none focus:ring-2 focus:ring-offset-2 block hover:shadow-lg hover:scale-105"
+            style={{ 
+                borderColor: '#feb21a',
+                '--tw-ring-color': '#134686'
+            } as React.CSSProperties}
         >
             <div className="flex items-center justify-between mb-2">
-                <h2 className="text-lg font-bold text-gray-800 capitalize">
+                <h2 className="text-lg font-bold capitalize" style={{ color: '#134686' }}>
                     {pokemon.name}
                 </h2>
                 <div className="flex items-center gap-2">
-                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded-full">
+                    <span 
+                        className="text-xs font-medium px-2 py-0.5 rounded-full"
+                        style={{ backgroundColor: '#feb21a', color: '#134686' }}
+                    >
                         #{pokemon.id}
-                    </span>
-                    <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded-full">
-                        Clicks: {clickCount}
                     </span>
                 </div>
             </div>
@@ -49,13 +46,14 @@ export default function PokemonItem({ pokemon }: PokemonItemProps) {
                         {pokemon.types.map((type) => (
                             <span 
                                 key={type.type.name}
-                                className="bg-green-100 text-green-800 text-xs font-medium px-1.5 py-0.5 rounded-full"
+                                className="text-xs font-medium px-1.5 py-0.5 rounded-full"
+                                style={{ backgroundColor: '#ed3f27', color: 'white' }}
                             >
                                 {type.type.name}
                             </span>
                         ))}
                     </div>
-                    <div className="text-xs text-gray-600">
+                    <div className="text-xs" style={{ color: '#134686' }}>
                         {pokemon.height / 10}m • {pokemon.weight / 10}kg
                     </div>
                 </div>
@@ -65,13 +63,14 @@ export default function PokemonItem({ pokemon }: PokemonItemProps) {
                 {pokemon.abilities.map((ability, index) => (
                     <span 
                         key={`${ability.ability.name}-${ability.slot}-${index}`}
-                        className="bg-gray-100 text-gray-700 text-xs font-medium px-1.5 py-0.5 rounded-full"
+                        className="text-xs font-medium px-1.5 py-0.5 rounded-full"
+                        style={{ backgroundColor: '#fdf4e3', color: '#134686' }}
                     >
                         {ability.ability.name}
                     </span>
                 ))}
             </div>
-        </button>
+        </Link>
     );
 }
 
