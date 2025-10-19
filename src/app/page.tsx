@@ -1,11 +1,5 @@
-import PokemonListWrapper from "./components/PokemonListWrapper";
+import PokemonList from "./components/PokemonList";
 
 export default function Home() {
-  const numberOfPokemons = 30;
-  
-  return (
-    <div>
-      <PokemonListWrapper numberOfPokemons={numberOfPokemons} />
-    </div>
-  );
+  return <PokemonList />;
 }

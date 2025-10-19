@@ -1,63 +1,102 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import PokemonItem from "./PokemonItem";
-import { Pokemon } from "@/types/pokemon";
+import PokemonSkeleton from "./PokemonSkeleton";
+import PokemonPagination from "./PokemonPagination";
+import { usePokemonList } from "@/app/hooks/usePokemonList";
+import { Pokemon } from "@/app/types/pokemon";
 
-interface PokemonListResponse {
-    count: number;
-    next: string | null;
-    previous: string | null;
-    results: Array<{
-        name: string;
-        url: string;
-    }>;
-}
+export default function PokemonList() {
+    const [allPokemons, setAllPokemons] = useState<Pokemon[]>([]);
+    const [offset, setOffset] = useState(0);
+    
+    const { data, isLoading, error, isFetching } = usePokemonList({
+        limit: 30, // Always fetch 30 at a time
+        offset: offset
+    });
 
-interface PokemonListProps {
-    numberOfPokemons?: number;
-}
-
-async function getPokemons(limit: number): Promise<Pokemon[]> {
-    try {
-        const listResponse = await fetch(
-            `https://pokeapi.co/api/v2/pokemon?limit=${limit}&offset=0`,
-            { next: { revalidate: 3600 } } // Cache for 1 hour
-        );
-        
-        if (!listResponse.ok) { // ok implica un status code entre 2xx
-            throw new Error('Failed to fetch Pokemon list');
-        }
-        
-        const listData: PokemonListResponse = await listResponse.json();
-        
-        const pokemonPromises = listData.results.map(async (pokemon) => {
-            const response = await fetch(pokemon.url, { 
-                next: { revalidate: 3600 } // Cache for 1 hour
+    // Update allPokemons when new data arrives
+    useEffect(() => {
+        if (data && data.length > 0) {
+            setAllPokemons(prev => {
+                const newPokemons = data.filter(pokemon => 
+                    !prev.some(existing => existing.id === pokemon.id)
+                );
+                return [...prev, ...newPokemons];
             });
-            
-            if (!response.ok) {
-                throw new Error(`Failed to fetch Pokemon: ${pokemon.name}`);
-            }
-            
-            return response.json() as Promise<Pokemon>;
-        });
-        
-        const allPokemons = await Promise.all(pokemonPromises);
-        console.log(`Fetched ${allPokemons.length} pokemons`);
-        return allPokemons;
-    } catch (error) {
-        console.error('Error fetching pokemons:', error);
-        throw new Error('Failed to load Pokemon data. Please try again.');
-    }
-}
+        }
+    }, [data]);
 
-// este es un server component
-export default async function PokemonList({ numberOfPokemons = 30 }: PokemonListProps) {
-    const pokemons = await getPokemons(numberOfPokemons);
+    const handleLoadMore = () => {
+        setOffset(prev => prev + 30);
+    };
+
+    const hasMore = allPokemons.length < 1000; // PokeAPI has around 1000+ Pokemon
+    const isLoadingMore = isFetching && allPokemons.length > 0;
+
+    if (error) {
+        return (
+            <div className="max-w-6xl mx-auto p-6">
+                <div className="text-center py-8">
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
+                        <h3 className="text-lg font-semibold text-red-800 mb-2">
+                            Error Loading Pokemon
+                        </h3>
+                        <p className="text-red-600 mb-4">
+                            {error.message || 'Failed to load Pokemon data. Please try again.'}
+                        </p>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                        >
+                            Try Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {pokemons.map((pokemon) => (
-                <PokemonItem key={pokemon.id} pokemon={pokemon} />
-            ))}
+        <div className="max-w-6xl mx-auto p-6">
+            {/* Header */}
+            <div className="text-center mb-8">
+                <h1 className="text-4xl font-bold mb-2" style={{ color: '#134686' }}>
+                    Pokemon Collection
+                </h1>
+                <p className="text-lg" style={{ color: '#134686' }}>
+                    Discover amazing Pokémon from the PokeAPI with infinite scroll
+                </p>
+            </div>
+
+            {/* Pokemon Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {allPokemons.map((pokemon) => (
+                    <PokemonItem key={pokemon.id} pokemon={pokemon} />
+                ))}
+            </div>
+
+            {/* Loading State */}
+            {isLoading && allPokemons.length === 0 && (
+                <PokemonSkeleton count={12} />
+            )}
+
+            {/* Loading More State */}
+            {isLoadingMore && (
+                <div className="mt-8">
+                    <PokemonSkeleton count={6} />
+                </div>
+            )}
+
+            {/* Pagination */}
+            <PokemonPagination
+                onLoadMore={handleLoadMore}
+                isLoading={isLoadingMore}
+                hasMore={hasMore}
+                currentCount={allPokemons.length}
+                totalCount={1000} // Approximate total
+            />
         </div>
     );
 }

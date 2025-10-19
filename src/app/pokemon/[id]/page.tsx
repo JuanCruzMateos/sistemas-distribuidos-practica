@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Pokemon } from "@/types/pokemon";
+import { Pokemon } from "@/app/types/pokemon";
 import { notFound } from "next/navigation";
 
 interface PokemonDetailPageProps {
@@ -14,7 +14,10 @@ async function getPokemonById(id: string): Promise<Pokemon | null> {
     });
     
     if (!response.ok) {
-      return null;
+      if (response.status === 404) {
+        return null; // Pokemon not found
+      }
+      throw new Error(`API error: ${response.status}`);
     }
     
     return response.json() as Promise<Pokemon>;

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Pokemon } from "@/types/pokemon";
+import { Pokemon } from "@/app/types/pokemon";
 
 interface PokemonItemProps {
     pokemon: Pokemon;
