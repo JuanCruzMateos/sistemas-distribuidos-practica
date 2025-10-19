@@ -54,7 +54,7 @@ export default function PokemonPagination({
       {!hasMore && totalCount && (
         <div className="text-center">
           <p className="text-gray-600 font-medium">
-            🎉 You've seen all {totalCount} Pokemon!
+            🎉 You have seen all {totalCount} Pokemon!
           </p>
         </div>
       )}

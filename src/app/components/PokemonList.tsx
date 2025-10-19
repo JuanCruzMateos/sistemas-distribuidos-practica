@@ -10,30 +10,38 @@ import { Pokemon } from "@/app/types/pokemon";
 export default function PokemonList() {
     const [allPokemons, setAllPokemons] = useState<Pokemon[]>([]);
     const [offset, setOffset] = useState(0);
+    const [hasLoadedInitial, setHasLoadedInitial] = useState(false);
     
     const { data, isLoading, error, isFetching } = usePokemonList({
-        limit: 30, // Always fetch 30 at a time
+        limit: 30, // Fijo en 30
         offset: offset
     });
 
     // Update allPokemons when new data arrives
     useEffect(() => {
         if (data && data.length > 0) {
-            setAllPokemons(prev => {
-                const newPokemons = data.filter(pokemon => 
-                    !prev.some(existing => existing.id === pokemon.id)
-                );
-                return [...prev, ...newPokemons];
-            });
+            if (!hasLoadedInitial) {
+                // primera carga -> reemplazar todos los datos
+                setAllPokemons(data);
+                setHasLoadedInitial(true);
+            } else {
+                // cargas posteriores -> solo appendear los nuevos datos
+                setAllPokemons(prev => {
+                    const newPokemons = data.filter(pokemon => 
+                        !prev.some(existing => existing.id === pokemon.id)
+                    );
+                    return [...prev, ...newPokemons];
+                });
+            }
         }
-    }, [data]);
+    }, [data, hasLoadedInitial]);
 
     const handleLoadMore = () => {
         setOffset(prev => prev + 30);
     };
 
     const hasMore = allPokemons.length < 1000; // PokeAPI has around 1000+ Pokemon
-    const isLoadingMore = isFetching && allPokemons.length > 0;
+    const isLoadingMore = isFetching && hasLoadedInitial;
 
     if (error) {
         return (
@@ -78,7 +86,7 @@ export default function PokemonList() {
             </div>
 
             {/* Loading State */}
-            {isLoading && allPokemons.length === 0 && (
+            {isLoading && !hasLoadedInitial && (
                 <PokemonSkeleton count={12} />
             )}
 
