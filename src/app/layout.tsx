@@ -36,7 +36,7 @@ export default function RootLayout({
                   href="/"
                   className="text-white text-xl font-bold hover:opacity-80 transition-opacity"
                 >
-                  Pokémon Collection
+                  Pokemon Collection
                 </Link>
               </div>
               <div className="flex items-center space-x-4">
@@ -44,7 +44,7 @@ export default function RootLayout({
                   href="/"
                   className="text-white hover:opacity-80 px-3 py-2 rounded-md text-sm font-medium transition-opacity"
                 >
-                  Lista Principal
+                  Main List
                 </Link>
               </div>
             </div>

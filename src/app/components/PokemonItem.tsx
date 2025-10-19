@@ -6,6 +6,7 @@ interface PokemonItemProps {
     pokemon: Pokemon;
 }
 
+// este es un server component
 export default function PokemonItem({ pokemon }: PokemonItemProps) {
     return (
         <Link 

@@ -22,7 +22,7 @@ async function getPokemons(limit: number): Promise<Pokemon[]> {
             { next: { revalidate: 3600 } } // Cache for 1 hour
         );
         
-        if (!listResponse.ok) {
+        if (!listResponse.ok) { // ok implica un status code entre 2xx
             throw new Error('Failed to fetch Pokemon list');
         }
         
@@ -49,6 +49,7 @@ async function getPokemons(limit: number): Promise<Pokemon[]> {
     }
 }
 
+// este es un server component
 export default async function PokemonList({ numberOfPokemons = 30 }: PokemonListProps) {
     const pokemons = await getPokemons(numberOfPokemons);
 

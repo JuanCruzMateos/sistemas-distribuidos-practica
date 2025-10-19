@@ -109,7 +109,7 @@ En páginas estáticas con enlaces `<a href="/ruta">` el navegador solicita al s
 
 En SPAs implementadas con JavaScript "a mano", la navegación se gestiona internamente: se interceptan clicks, se modifica la URL con `history.pushState()` y se responde a `popstate` para renderizar las vistas sin recarga. Esa técnica evita recargas completas pero requiere implementar por cuenta propia el enrutador, la gestión del estado y las transiciones.
 
-En este repositorio de ejemplo en Vanilla JS se puede ver un ejemplo. Basicamente se utiliza Express, una libreria de Node.js pero para desarrollar APIs, y se sirve una ruta "/*", donde para cualquier ruta se "sirve" el archivo index.js con todo el código Javascript necesario para la app web, y luego la navegación se maneja utilizando las APIs del navegador (mencionadas en la primera clase presencial).
+En este [repositorio de ejemplo en Vanilla JS](https://github.com/casasmartinignacio/ejemplo-frontend-vanilla-js) se puede ver un ejemplo. Basicamente se utiliza Express, una libreria de Node.js pero para desarrollar APIs, y se sirve una ruta "/*", donde para cualquier ruta se "sirve" el archivo index.js con todo el código Javascript necesario para la app web, y luego la navegación se maneja utilizando las APIs del navegador (mencionadas en la primera clase presencial).
 
 ### React con librería de routing (por ejemplo react-router-dom)
 
