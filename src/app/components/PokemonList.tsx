@@ -34,7 +34,7 @@ export default function PokemonList() {
                 });
             }
         }
-    }, [data, hasLoadedInitial]);
+    }, [data, hasLoadedInitial]); // se ejecuta cuando data o hasLoadedInitial cambia
 
     const handleLoadMore = () => {
         setOffset(prev => prev + 30);
