@@ -1,350 +1,555 @@
-# Conocimiento previo necesario: React Contexts
+¿Qué son las API Routes?
+
+En Next.js, las API Routes nos permiten crear endpoints de backend directamente dentro de nuestra aplicación. Es decir, podemos construir nuestra propia API sin necesidad de un servidor separado. Estos endpoints se crean como archivos dentro de la carpeta app/api/, y cada archivo representa una ruta de la API.
+
+Las API Routes son funciones del lado del servidor que reciben una Request y devuelven una Response. Esto nos permite:
+
+Crear, leer, actualizar y eliminar datos (CRUD).
+Validar datos antes de procesarlos.
+Conectar con bases de datos.
+Mantener lógica sensible en el servidor (API keys, tokens, etc.).
+Métodos HTTP: El lenguaje de las APIs REST
+
+Cuando trabajamos con APIs, utilizamos diferentes métodos HTTP para indicar qué tipo de operación queremos realizar. Los más comunes son:
+
+GET: Obtener/leer datos. No modifica nada en el servidor.
+Ejemplo: Traer la lista de productos de una tienda.
+POST: Crear un nuevo recurso.
+Ejemplo: Agregar un nuevo producto al catálogo.
+PATCH: Actualizar parcialmente un recurso existente.
+Ejemplo: Cambiar solo el precio de un producto.
+PUT: Reemplazar completamente un recurso existente.
+Ejemplo: Actualizar todos los datos de un producto.
+DELETE: Eliminar un recurso.
+Ejemplo: Eliminar un producto del catálogo.
+Arquitectura REST
+
+REST (Representational State Transfer) es un estilo de arquitectura para diseñar APIs. Los principios básicos son:
+
+Recursos: Todo es un recurso identificable por una URL.
+/api/products → colección de productos
+/api/products/25 → producto específico con id 25
+Métodos HTTP: Usamos los verbos HTTP correctos para cada acción.
+GET /api/products → lista todos
+POST /api/products → crea uno nuevo
+DELETE /api/products/25 → elimina el id 25
+Stateless: Cada petición es independiente, no guarda estado entre requests.
+Respuestas consistentes: Usamos códigos de estado HTTP estándar.
+200: OK
+201: Created
+400: Bad Request
+404: Not Found
+500: Internal Server Error
+Crear una API Route en Next.js
+
+Estructura básica
 
-## ¿Qué es un contexto en React?
-
-En React, un contexto es una forma de compartir información entre componentes sin tener que pasar props manualmente a través de múltiples niveles. Es decir, cuando varios componentes necesitan acceder a los mismos datos (por ejemplo, un tema de color, el idioma de la aplicación o el estado de autenticación), en lugar de pasar esos datos de padre a hijo constantemente, podemos usar un contexto para que estén disponibles directamente donde se necesiten.
-
-El contexto se crea con React.createContext() y luego se usa un Provider para "proveer" los datos, y los componentes hijos pueden acceder a esos datos con el hook useContext.
-
-## ¿Cómo funciona?
-- Crear un contexto con createContext.
-- Proveer el valor desde un componente padre usando <Context.Provider>.
-- Consumir el valor en los hijos con useContext.
-
-Esto evita el prop drilling (pasar props innecesariamente por muchos niveles).
-
-## Ejemplo básico
-```javascript
-import React, { createContext, useContext, useState } from "react";
-
-// 1. Crear el contexto
-const ThemeContext = createContext();
-
-// 2. Crear un proveedor
-function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState("light");
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
-}
-
-// 3. Usar el contexto en un componente hijo
-function ThemeButton() {
-  const { theme, setTheme } = useContext(ThemeContext);
-  return (
-    <button onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
-      Tema actual: {theme}
-    </button>
-  );
-}
-
-export default function App() {
-  return (
-    <ThemeProvider>
-      <ThemeButton />
-    </ThemeProvider>
-  );
-}
-```
-
-## Una buena practica seria:
-
-dentro de app/contexts -> tener en un archivo unico el contexto + el provider + un hook que permita usarlo (exportar directamente el useContext(ThemeContext); como una funcion). Esto es, para luego en el componente que lo consume, importar directamente esta funcion.
-Tambien es importante inicializar los contextos con valores iniciales, pero esto lo veremos en otra actividad.
-
-# Data Fetching
-
-En cualquier aplicación web moderna necesitamos traer datos de algún lado: una API, un archivo externo o incluso una base de datos propia. A este proceso se lo llama Data Fetching. Next.js nos ofrece distintas formas de hacerlo, y elegir la adecuada depende de qué tipo de datos queremos mostrar y qué experiencia queremos para el usuario.
-
-Los dos enfoques principales son:
-
-- Client-side Data Fetching (desde el navegador del usuario).
-- Server-side Data Fetching (desde el servidor antes de enviar la página).
-
-Además, veremos cómo mostrar estados de carga, cómo funciona React Query (una librería muy usada), y cómo aprovechar nuevas capacidades del App Router como Suspense.
-
-## Client-side Data Fetching
-
-Es cuando los datos se piden después de que la página ya se renderizó en el navegador. Esto significa que al entrar a la página, inicialmente puede aparecer vacía (o con un "Loading…"), y luego se rellenan los datos.
-
-### Ejemplo básico con useState y useEffect
-```javascript
-"use client";
-
-import { useEffect, useState } from "react";
-
-type User = {
-  id: number;
-  name: string;
-};
-
-export default function UserList() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("https://jsonplaceholder.typicode.com/users")
-      .then((res) => res.json())
-      .then((data: User[]) => {
-        setUsers(data);
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) return <p>Cargando...</p>;
-
-  return (
-    <ul>
-      {users.map((u) => (
-        <li key={u.id}>{u.name}</li>
-      ))}
-    </ul>
-  );
-}
-```
-
-Basicamente es lo que se vino haciendo las actividades pasadas.
-
-**Ventajas:**
-- Permite mostrar datos dinámicos que cambian seguido.
-- Ideal para dashboards o contenido personalizado.
-
-**Desventajas:**
-- La primera carga puede estar vacía.
-- Peor SEO, porque los buscadores ven una página sin contenido inicial.
-
-## Un mejor enfoque: TanStack React Query
-
-React Query (ahora TanStack Query) es una librería que simplifica muchísimo el manejo de datos en cliente.
-
-Ofrece:
-- Cache automático: guarda los resultados y evita pedir los mismos datos varias veces.
-- Refetch automático: actualiza datos cada cierto tiempo o al reenfocar la pestaña.
-- Control de estados: loading, error, success.
-- Mutaciones (PATCH, POST, DELETE) con manejo de cache.
-
-### Configuración básica
-
-Primero instalamos:
-
-```bash
-npm install @tanstack/react-query
-```
-
-Creamos un QueryClientProvider en nuestro layout.tsx:
-
-```javascript
-"use client";
-
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactNode, useState } from "react";
-
-export default function RootLayout({ children }: { children: ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient());
-
-  return (
-    <html lang="es">
-      <body>
-        <QueryClientProvider client={queryClient}>
-          {children}
-        </QueryClientProvider>
-      </body>
-    </html>
-  );
-}
-```
-
-### Hacer un GET con useQuery
-```javascript
-"use client";
-
-import { useQuery } from "@tanstack/react-query";
-
-type User = {
-  id: number;
-  name: string;
-};
-
-async function fetchUsers(): Promise<User[]> {
-  const res = await fetch("https://jsonplaceholder.typicode.com/users");
-  return res.json();
-}
-
-export default function UserList() {
-  const { data, isLoading, error } = useQuery<User[]>({
-    queryKey: ["users"], // clave del cache
-    queryFn: fetchUsers, // función que trae los datos
-  });
-
-  if (isLoading) return <p>Cargando...</p>;
-  if (error) return <p>Error al cargar</p>;
-
-  return (
-    <ul>
-      {data?.map((u) => (
-        <li key={u.id}>{u.name}</li>
-      ))}
-    </ul>
-  );
-}
-```
-
-### Hacer un PATCH con useMutation
-```javascript
-"use client";
-
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-
-async function updateUser(id: number, name: string) {
-  const res = await fetch(`https://jsonplaceholder.typicode.com/users/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name }),
-  });
-  return res.json();
-}
-
-export default function UpdateUser() {
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation({
-    mutationFn: ({ id, name }: { id: number; name: string }) =>
-      updateUser(id, name),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] }); // refresca la lista
-    },
-  });
-
-  return (
-    <button
-      onClick={() => mutation.mutate({ id: 1, name: "Nuevo Nombre" })}
-    >
-      Actualizar Usuario 1
-    </button>
-  );
-}
-```
-
-### Puntos clave de React Query:
-- queryKey: identifica cada request en la cache.
-- queryFn: la función que trae los datos.
-- useMutation: para crear, actualizar o eliminar datos.
-- invalidateQueries: refresca datos en cache después de una mutación.
-
-Una buena practica cuando utilizamos este enfoque, es tener 2 carpetas dentro de app:
-- /services -> donde estan las funciones que llaman a la api (sea nuestra o externa)
-- /hooks -> donde estan los hooks en distintos archivos (agrupados segun nuestro criterio) que consumen los servicios
-
-y luego importar esos hooks dentro de cada componente donde los necesitemos. Los errores los podemos manejar en distintos lugares de acuerdo a su naturaleza. Esto lo veremos mas adelante.
-
-## Server-side Data Fetching
-
-Aquí los datos se cargan en el servidor antes de mandar el HTML al navegador.
-
-En el App Router, los componentes son Server Components por defecto, lo que facilita mucho esto.
-
-### Ejemplo básico
-```javascript
-// app/products/page.tsx
-
-type Product = {
-  id: number;
-  title: string;
-};
-
-export default async function ProductsPage() {
-  const res = await fetch("https://fakestoreapi.com/products");
-  const products: Product[] = await res.json();
-
-  return (
-    <div>
-      <h1>Productos</h1>
-      <ul>
-        {products.map((p) => (
-          <li key={p.id}>{p.title}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-```
-
-En este caso, el navegador recibe ya la lista de productos renderizada en el HTML.
-
-**Ventajas:**
-- Mejor SEO.
-- Experiencia inicial más rápida.
-- Mayor seguridad (las API keys no viajan al cliente).
-
-**Desventajas:**
-- Los datos se cargan solo al render inicial.
-- Si el usuario interactúa mucho, puede ser necesario combinar con client-side fetching.
-
-Usando una route.ts (API Route en Next.js) podemos crear un endpoint interno para encapsular la lógica:
-
-```javascript
 // app/api/products/route.ts
-
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const res = await fetch("https://fakestoreapi.com/products");
-  const data = await res.json();
-  return NextResponse.json(data);
+  // Lógica para obtener datos
+  return NextResponse.json({ message: "Lista de productos" });
 }
-```
 
-Y consumirlo desde un componente de servidor:
+export async function POST(request: Request) {
+  // Lógica para crear un recurso
+  const body = await request.json();
+  return NextResponse.json({ message: "Producto creado", data: body });
+}
 
-```javascript
-// app/products/page.tsx
 
-export default async function ProductsPage() {
-  const res = await fetch("http://localhost:3000/api/products", {
-    cache: "no-store", // evita cache si queremos datos frescos
+Cada función exportada (GET, POST, PATCH, DELETE) representa un método HTTP que ese endpoint puede manejar.
+
+Recibir y validar el body
+
+Cuando recibimos datos del cliente (por ejemplo, en un POST), debemos:
+
+Parsear el body de la request.
+Validar que los datos sean correctos.
+Devolver un error si algo falla.
+ 
+typescript
+// app/api/products/route.ts
+import { NextResponse } from "next/server";
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    
+    // Validación simple
+    if (!body.name || !body.price) {
+      return NextResponse.json(
+        { error: "Faltan campos obligatorios: name y price" },
+        { status: 400 }
+      );
+    }
+
+    if (typeof body.price !== "number" || body.price <= 0) {
+      return NextResponse.json(
+        { error: "price debe ser un número mayor a 0" },
+        { status: 400 }
+      );
+    }
+
+    // Si todo está bien, procesamos
+    // ... lógica para guardar
+    
+    return NextResponse.json(
+      { message: "Producto creado exitosamente", data: body },
+      { status: 201 }
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Error al procesar la solicitud" },
+      { status: 500 }
+    );
+  }
+}
+
+
+Recibir y validar parámetros dinámicos
+
+Para crear rutas con parámetros (como /api/products/25), creamos una carpeta con corchetes:
+
+
+ 
+typescript
+// app/api/products/[id]/route.ts
+import { NextResponse } from "next/server";
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const id = parseInt(params.id);
+
+  // Validar el parámetro
+  if (isNaN(id)) {
+    return NextResponse.json(
+      { error: "El ID debe ser un número válido" },
+      { status: 400 }
+    );
+  }
+
+  // ... lógica para eliminar
+  
+  return NextResponse.json(
+    { message: `Producto ${id} eliminado` },
+    { status: 200 }
+  );
+}
+
+
+Simulando una base de datos con JSON
+
+Como todavía no estamos trabajando con bases de datos reales, vamos a crear una clase que abstraiga esa funcionalidad y guarde los datos en un archivo JSON.
+
+Crear la clase Database
+
+
+ 
+typescript
+// app/lib/database.ts
+import fs from "fs/promises";
+import path from "path";
+
+const DB_PATH = path.join(process.cwd(), "database.json");
+
+export interface Product {
+  id: number;
+  name: string;
+  price: number;
+  description: string;
+  stock: number;
+  createdAt: string;
+}
+
+class Database {
+  private async readDB(): Promise<Product[]> {
+    try {
+      const data = await fs.readFile(DB_PATH, "utf-8");
+      return JSON.parse(data);
+    } catch (error) {
+      // Si el archivo no existe, devolver array vacío
+      return [];
+    }
+  }
+
+  private async writeDB(data: Product[]): Promise<void> {
+    await fs.writeFile(DB_PATH, JSON.stringify(data, null, 2));
+  }
+
+  async getAll(): Promise<Product[]> {
+    return await this.readDB();
+  }
+
+  async getById(id: number): Promise<Product | undefined> {
+    const data = await this.readDB();
+    return data.find((item) => item.id === id);
+  }
+
+  async create(product: Omit<Product, "id" | "createdAt">): Promise<Product> {
+    const data = await this.readDB();
+    const newProduct: Product = {
+      id: data.length > 0 ? Math.max(...data.map((p) => p.id)) + 1 : 1,
+      ...product,
+      createdAt: new Date().toISOString(),
+    };
+    data.push(newProduct);
+    await this.writeDB(data);
+    return newProduct;
+  }
+
+  async delete(id: number): Promise<boolean> {
+    const data = await this.readDB();
+    const initialLength = data.length;
+    const filtered = data.filter((item) => item.id !== id);
+    
+    if (filtered.length === initialLength) {
+      return false; // No se encontró el elemento
+    }
+    
+    await this.writeDB(filtered);
+    return true;
+  }
+
+  async update(id: number, updates: Partial<Omit<Product, "id" | "createdAt">>): Promise<Product | null> {
+    const data = await this.readDB();
+    const index = data.findIndex((item) => item.id === id);
+    
+    if (index === -1) {
+      return null;
+    }
+    
+    data[index] = { ...data[index], ...updates };
+    await this.writeDB(data);
+    return data[index];
+  }
+}
+
+export const db = new Database();
+
+
+Nota importante: El módulo fs solo funciona en el servidor, nunca en el cliente. Por eso esta clase solo se importa y usa dentro de las API Routes.
+
+Inicializar el archivo database.json
+
+Crear manualmente en la raíz del proyecto:
+
+
+ 
+json
+[]
+
+
+Implementar los endpoints completos
+
+GET - Obtener todos los productos
+
+
+ 
+typescript
+// app/api/products/route.ts
+import { NextResponse } from "next/server";
+import { db } from "@/app/lib/database";
+
+export async function GET() {
+  try {
+    const products = await db.getAll();
+    return NextResponse.json(products, { status: 200 });
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Error al obtener productos" },
+      { status: 500 }
+    );
+  }
+}
+
+
+POST - Crear un producto
+
+
+ 
+typescript
+// app/api/products/route.ts (continuación)
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+
+    // Validaciones
+    if (!body.name || !body.price || body.stock === undefined) {
+      return NextResponse.json(
+        { error: "Faltan campos obligatorios: name, price, stock" },
+        { status: 400 }
+      );
+    }
+
+    if (body.price <= 0) {
+      return NextResponse.json(
+        { error: "El precio debe ser mayor a 0" },
+        { status: 400 }
+      );
+    }
+
+    const newProduct = await db.create({
+      name: body.name,
+      price: body.price,
+      description: body.description || "",
+      stock: body.stock,
+    });
+
+    return NextResponse.json(newProduct, { status: 201 });
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Error al crear producto" },
+      { status: 500 }
+    );
+  }
+}
+
+
+DELETE - Eliminar un producto
+
+
+ 
+typescript
+// app/api/products/[id]/route.ts
+import { NextResponse } from "next/server";
+import { db } from "@/app/lib/database";
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id = parseInt(params.id);
+
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { error: "ID inválido" },
+        { status: 400 }
+      );
+    }
+
+    const deleted = await db.delete(id);
+
+    if (!deleted) {
+      return NextResponse.json(
+        { error: "Producto no encontrado" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(
+      { message: "Producto eliminado correctamente" },
+      { status: 200 }
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Error al eliminar producto" },
+      { status: 500 }
+    );
+  }
+}
+
+
+Integración con el frontend usando TanStack Query
+
+Ahora vamos a conectar todo: el usuario hace una acción → TanStack Query (mutation) → Service → API Route → Database.
+
+Estructura de carpetas recomendada
+
+
+ 
+app/
+├── api/
+│   └── products/
+│       ├── route.ts
+│       └── [id]/
+│           └── route.ts
+├── lib/
+│   └── database.ts
+├── services/
+│   └── products.service.ts
+└── hooks/
+    └── useProducts.ts
+
+
+Crear el servicio
+
+
+ 
+typescript
+// app/services/products.service.ts
+import { Product } from "@/app/lib/database";
+
+export const productsService = {
+  getAll: async (): Promise<Product[]> => {
+    const res = await fetch("/api/products");
+    if (!res.ok) throw new Error("Error al obtener productos");
+    return res.json();
+  },
+
+  create: async (product: {
+    name: string;
+    price: number;
+    description: string;
+    stock: number;
+  }): Promise<Product> => {
+    const res = await fetch("/api/products", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(product),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "Error al crear producto");
+    }
+    return res.json();
+  },
+
+  delete: async (id: number): Promise<void> => {
+    const res = await fetch(`/api/products/${id}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) throw new Error("Error al eliminar producto");
+  },
+};
+
+
+Crear los hooks con TanStack Query
+
+
+ 
+typescript
+// app/hooks/useProducts.ts
+"use client";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { productsService } from "@/app/services/products.service";
+
+export function useProducts() {
+  return useQuery({
+    queryKey: ["products"],
+    queryFn: productsService.getAll,
   });
-  const products = await res.json();
+}
+
+export function useCreateProduct() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: productsService.create,
+    onSuccess: () => {
+      // Invalida la cache para refrescar la lista
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}
+
+export function useDeleteProduct() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: productsService.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}
+
+
+Usar los hooks en un componente
+
+
+ 
+typescript
+// app/components/ProductItem.tsx
+"use client";
+
+import { useDeleteProduct } from "@/app/hooks/useProducts";
+
+interface ProductItemProps {
+  product: {
+  id: number;
+    name: string;
+    price: number;
+    stock: number;
+  };
+}
+
+export function ProductItem({ product }: ProductItemProps) {
+  const deleteMutation = useDeleteProduct();
+
+  const handleDelete = () => {
+    if (confirm(`¿Estás seguro de eliminar ${product.name}?`)) {
+      deleteMutation.mutate(product.id);
+    }
+  };
+
+  const isLoading = deleteMutation.isPending;
 
   return (
     <div>
-      <h1>Productos</h1>
-      {products.map((p: any) => (
-        <div key={p.id}>{p.title}</div>
-      ))}
+      <h3>{product.name}</h3>
+      <p>Precio: ${product.price}</p>
+      <p>Stock: {product.stock} unidades</p>
+      <button onClick={handleDelete} disabled={isLoading}>
+        {isLoading ? "Eliminando..." : "🗑️ Eliminar"}
+      </button>
+      {deleteMutation.isError && <p>Error: {deleteMutation.error.message}</p>}
     </div>
   );
 }
-```
 
-Esto es una buena practica para manejar los errores de forma personalizada, con codigos de error propios que luegos seran manejados en el frontend con mensajes o flujos especificos.
 
-## Loading states y Suspense
+El flujo completo: De la UI a la base de datos
 
-Cuando los datos tardan en llegar, es buena práctica mostrar un estado de carga.
+Este es el recorrido que hace una petición cuando el usuario hace clic en "Eliminar producto":
 
-En Client-side:
+Usuario hace clic en el botón dentro del componente ProductItem.
+Se ejecuta handleDelete que llama a deleteMutation.mutate().
+TanStack Query ejecuta la función definida en mutationFn, que es productsService.delete().
+El servicio hace un fetch a /api/products/[id] con método DELETE.
+La API Route (app/api/products/[id]/route.ts) recibe la petición:
+Valida el parámetro id.
+Llama a db.delete() para eliminar del JSON.
+La clase Database lee el archivo database.json, filtra el elemento y lo escribe de vuelta.
+La API Route devuelve una respuesta exitosa con status 200.
+El servicio parsea la respuesta y la devuelve.
+TanStack Query recibe el éxito y ejecuta onSuccess, que invalida la cache.
+El componente se re-renderiza mostrando la lista actualizada sin el producto eliminado.
+Este flujo respeta la arquitectura REST y separa claramente las responsabilidades:
 
-```javascript
-if (!data) return <p>Cargando...</p>;
-```
-
-En Server-side con App Router, podemos usar loading.tsx:
-
-```javascript
-// app/products/loading.tsx
-export default function Loading() {
-  return <p>Cargando productos...</p>;
-}
-```
-
-Next.js mostrará este archivo automáticamente mientras carga los datos.
-
-## Ejercicio propuesto
+UI: Maneja la interacción del usuario.
+Hooks: Gestionan el estado y la sincronización con el servidor.
+Services: Encapsulan las llamadas HTTP.
+API Routes: Validan y procesan las peticiones.
+Database: Abstrae la persistencia de datos.
+Ejercicio propuesto
 
 Modificación de la actividad anterior para:
 
-1. **Que la lista de Pokemons ahora sea un client side component que utilice la libreria TanStack Query para pedir los datos.** Utilizar alguna libreria externa a eleccion para mostrar un skeleton mientras la pagina carga. Ademas, desarrollar un componente de páginacion para poder cambiar de pagina, simplemente un boton de "cargar mas" que amplie la cantidad de elementos por pagina (puede utilizar un state para esto, y pasarselo como argumento al hook de React Query).
-
-2. **Que el detalle de un Pokemon, sea completamente renderizado del lado del servidor.** Utilizar las herramientas que da Next.js para que la experiencia sea agradable para el usuario, como el archivo loading.
+Crear la estructura de base de datos simulada:
+Implementar la clase Database en app/lib/database.ts.
+Crear el archivo database.json en la raíz del proyecto inicializado con [].
+Crear las API Routes:
+POST /api/favorites para agregar un pokémon a favoritos.
+DELETE /api/favorites/[id] para eliminarlo.
+Incluir validaciones apropiadas en ambos endpoints.
+Usar códigos de estado HTTP correctos (201, 400, 404, 409, 500).
+Crear la capa de servicios:
+Archivo app/services/favorites.service.ts con las funciones add y remove.
+Crear los hooks de TanStack Query:
+Archivo app/hooks/useFavorites.ts con useAddFavorite y useRemoveFavorite.
+Ambos hooks deben invalidar la query de favoritos al completarse.
+Modificar el componente de lista de Pokémons:
+Agregar un botón en cada item de la lista para agregar/quitar de favoritos.
+El botón debe cambiar su apariencia según si el pokémon ya está en favoritos.
+Mostrar un estado de carga mientras se procesa la petición.
+Manejar y mostrar errores si algo falla.
+(Opcional) Crear una página de favoritos:
+Una nueva ruta /favorites que muestre solo los pokémons favoritos.
+Usar el hook useFavorites() para obtener la lista.
+Incluir la opción de eliminar desde esta vista también.
