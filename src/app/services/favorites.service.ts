@@ -11,7 +11,7 @@ async function handleErrorResponse(response: Response): Promise<never> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_) {
     // Ignorar errores al parsear respuesta
-  }
+  } 
 
   throw new Error(message);
 }

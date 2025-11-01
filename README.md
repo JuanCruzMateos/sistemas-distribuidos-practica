@@ -1,83 +1,57 @@
-¿Qué son las API Routes?
+# API Routes en Next.js
 
-En Next.js, las API Routes nos permiten crear endpoints de backend directamente dentro de nuestra aplicación. Es decir, podemos construir nuestra propia API sin necesidad de un servidor separado. Estos endpoints se crean como archivos dentro de la carpeta app/api/, y cada archivo representa una ruta de la API.
+Las API Routes de Next.js permiten definir endpoints de backend dentro de la misma aplicación, sin levantar un servidor separado. Cada archivo dentro de `app/api/` representa una ruta y expone funciones del lado del servidor que reciben una `Request` y devuelven una `Response`.
 
-Las API Routes son funciones del lado del servidor que reciben una Request y devuelven una Response. Esto nos permite:
+## ¿Para qué sirven?
 
-Crear, leer, actualizar y eliminar datos (CRUD).
-Validar datos antes de procesarlos.
-Conectar con bases de datos.
-Mantener lógica sensible en el servidor (API keys, tokens, etc.).
-Métodos HTTP: El lenguaje de las APIs REST
+- Crear, leer, actualizar y eliminar datos (CRUD).
+- Validar información antes de procesarla.
+- Conectar con bases de datos u otros servicios.
+- Mantener lógica sensible en el servidor (API keys, tokens, etc.).
 
-Cuando trabajamos con APIs, utilizamos diferentes métodos HTTP para indicar qué tipo de operación queremos realizar. Los más comunes son:
+## Métodos HTTP frecuentes
 
-GET: Obtener/leer datos. No modifica nada en el servidor.
-Ejemplo: Traer la lista de productos de una tienda.
-POST: Crear un nuevo recurso.
-Ejemplo: Agregar un nuevo producto al catálogo.
-PATCH: Actualizar parcialmente un recurso existente.
-Ejemplo: Cambiar solo el precio de un producto.
-PUT: Reemplazar completamente un recurso existente.
-Ejemplo: Actualizar todos los datos de un producto.
-DELETE: Eliminar un recurso.
-Ejemplo: Eliminar un producto del catálogo.
-Arquitectura REST
+- **GET**: Lee datos (ej. listar productos).
+- **POST**: Crea un recurso (ej. añadir un producto al catálogo).
+- **PATCH**: Actualiza parcialmente (ej. cambiar precio).
+- **PUT**: Reemplaza completamente (ej. sobrescribir todos los datos).
+- **DELETE**: Elimina (ej. borrar producto por id).
 
-REST (Representational State Transfer) es un estilo de arquitectura para diseñar APIs. Los principios básicos son:
+## Principios REST esenciales
 
-Recursos: Todo es un recurso identificable por una URL.
-/api/products → colección de productos
-/api/products/25 → producto específico con id 25
-Métodos HTTP: Usamos los verbos HTTP correctos para cada acción.
-GET /api/products → lista todos
-POST /api/products → crea uno nuevo
-DELETE /api/products/25 → elimina el id 25
-Stateless: Cada petición es independiente, no guarda estado entre requests.
-Respuestas consistentes: Usamos códigos de estado HTTP estándar.
-200: OK
-201: Created
-400: Bad Request
-404: Not Found
-500: Internal Server Error
-Crear una API Route en Next.js
+- **Recursos**: Cada recurso se identifica con una URL (ej. `/api/products`, `/api/products/25`).
+- **Verbos HTTP correctos**: GET para leer, POST para crear, DELETE para eliminar, etc.
+- **Stateless**: Cada request es independiente, no se guarda estado entre peticiones.
+- **Respuestas consistentes**: Usar códigos estándar (200, 201, 400, 404, 500...).
 
-Estructura básica
+## Crear una API Route básica
 
+```ts
 // app/api/products/route.ts
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  // Lógica para obtener datos
   return NextResponse.json({ message: "Lista de productos" });
 }
 
 export async function POST(request: Request) {
-  // Lógica para crear un recurso
   const body = await request.json();
   return NextResponse.json({ message: "Producto creado", data: body });
 }
+```
 
+Cada función exportada (`GET`, `POST`, `PATCH`, `DELETE`, etc.) representa el handler para ese método HTTP.
 
-Cada función exportada (GET, POST, PATCH, DELETE) representa un método HTTP que ese endpoint puede manejar.
+## Validar el cuerpo de la request
 
-Recibir y validar el body
-
-Cuando recibimos datos del cliente (por ejemplo, en un POST), debemos:
-
-Parsear el body de la request.
-Validar que los datos sean correctos.
-Devolver un error si algo falla.
- 
-typescript
+```ts
 // app/api/products/route.ts
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    
-    // Validación simple
+
     if (!body.name || !body.price) {
       return NextResponse.json(
         { error: "Faltan campos obligatorios: name y price" },
@@ -92,9 +66,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Si todo está bien, procesamos
-    // ... lógica para guardar
-    
     return NextResponse.json(
       { message: "Producto creado exitosamente", data: body },
       { status: 201 }
@@ -106,26 +77,21 @@ export async function POST(request: Request) {
     );
   }
 }
+```
 
+## Parámetros dinámicos en rutas
 
-Recibir y validar parámetros dinámicos
-
-Para crear rutas con parámetros (como /api/products/25), creamos una carpeta con corchetes:
-
-
- 
-typescript
+```ts
 // app/api/products/[id]/route.ts
 import { NextResponse } from "next/server";
 
 export async function DELETE(
-  request: Request,
+  _request: Request,
   { params }: { params: { id: string } }
 ) {
-  const id = parseInt(params.id);
+  const id = Number(params.id);
 
-  // Validar el parámetro
-  if (isNaN(id)) {
+  if (Number.isNaN(id)) {
     return NextResponse.json(
       { error: "El ID debe ser un número válido" },
       { status: 400 }
@@ -133,23 +99,19 @@ export async function DELETE(
   }
 
   // ... lógica para eliminar
-  
+
   return NextResponse.json(
     { message: `Producto ${id} eliminado` },
     { status: 200 }
   );
 }
+```
 
+## Simular una base de datos con JSON
 
-Simulando una base de datos con JSON
+Creamos una clase `Database` que persiste la información en `database.json`.
 
-Como todavía no estamos trabajando con bases de datos reales, vamos a crear una clase que abstraiga esa funcionalidad y guarde los datos en un archivo JSON.
-
-Crear la clase Database
-
-
- 
-typescript
+```ts
 // app/lib/database.ts
 import fs from "fs/promises";
 import path from "path";
@@ -171,7 +133,6 @@ class Database {
       const data = await fs.readFile(DB_PATH, "utf-8");
       return JSON.parse(data);
     } catch (error) {
-      // Si el archivo no existe, devolver array vacío
       return [];
     }
   }
@@ -181,7 +142,7 @@ class Database {
   }
 
   async getAll(): Promise<Product[]> {
-    return await this.readDB();
+    return this.readDB();
   }
 
   async getById(id: number): Promise<Product | undefined> {
@@ -203,25 +164,27 @@ class Database {
 
   async delete(id: number): Promise<boolean> {
     const data = await this.readDB();
-    const initialLength = data.length;
     const filtered = data.filter((item) => item.id !== id);
-    
-    if (filtered.length === initialLength) {
-      return false; // No se encontró el elemento
+
+    if (filtered.length === data.length) {
+      return false;
     }
-    
+
     await this.writeDB(filtered);
     return true;
   }
 
-  async update(id: number, updates: Partial<Omit<Product, "id" | "createdAt">>): Promise<Product | null> {
+  async update(
+    id: number,
+    updates: Partial<Omit<Product, "id" | "createdAt">>
+  ): Promise<Product | null> {
     const data = await this.readDB();
     const index = data.findIndex((item) => item.id === id);
-    
+
     if (index === -1) {
       return null;
     }
-    
+
     data[index] = { ...data[index], ...updates };
     await this.writeDB(data);
     return data[index];
@@ -229,28 +192,21 @@ class Database {
 }
 
 export const db = new Database();
+```
 
+> **Nota**: `fs` solo funciona en el servidor. No importes esta clase en componentes cliente.
 
-Nota importante: El módulo fs solo funciona en el servidor, nunca en el cliente. Por eso esta clase solo se importa y usa dentro de las API Routes.
+Inicializa el archivo `database.json` en la raíz del proyecto con `[]`:
 
-Inicializar el archivo database.json
-
-Crear manualmente en la raíz del proyecto:
-
-
- 
-json
+```json
 []
+```
 
+## Endpoints completos de ejemplo
 
-Implementar los endpoints completos
+### GET `/api/products`
 
-GET - Obtener todos los productos
-
-
- 
-typescript
-// app/api/products/route.ts
+```ts
 import { NextResponse } from "next/server";
 import { db } from "@/app/lib/database";
 
@@ -265,19 +221,15 @@ export async function GET() {
     );
   }
 }
+```
 
+### POST `/api/products`
 
-POST - Crear un producto
-
-
- 
-typescript
-// app/api/products/route.ts (continuación)
+```ts
 export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // Validaciones
     if (!body.name || !body.price || body.stock === undefined) {
       return NextResponse.json(
         { error: "Faltan campos obligatorios: name, price, stock" },
@@ -307,25 +259,19 @@ export async function POST(request: Request) {
     );
   }
 }
+```
 
+### DELETE `/api/products/[id]`
 
-DELETE - Eliminar un producto
-
-
- 
-typescript
-// app/api/products/[id]/route.ts
-import { NextResponse } from "next/server";
-import { db } from "@/app/lib/database";
-
+```ts
 export async function DELETE(
-  request: Request,
+  _request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = parseInt(params.id);
+    const id = Number(params.id);
 
-    if (isNaN(id)) {
+    if (Number.isNaN(id)) {
       return NextResponse.json(
         { error: "ID inválido" },
         { status: 400 }
@@ -352,35 +298,31 @@ export async function DELETE(
     );
   }
 }
+```
 
+## Integración con TanStack Query
 
-Integración con el frontend usando TanStack Query
+Cadena completa: **UI → TanStack Query → Service → API Route → Database**.
 
-Ahora vamos a conectar todo: el usuario hace una acción → TanStack Query (mutation) → Service → API Route → Database.
+### Estructura sugerida
 
-Estructura de carpetas recomendada
-
-
- 
+```text
 app/
-├── api/
-│   └── products/
-│       ├── route.ts
-│       └── [id]/
-│           └── route.ts
-├── lib/
-│   └── database.ts
-├── services/
-│   └── products.service.ts
-└── hooks/
-    └── useProducts.ts
+├─ api/
+│  └─ products/
+│     ├─ route.ts
+│     └─ [id]/route.ts
+├─ lib/
+│  └─ database.ts
+├─ services/
+│  └─ products.service.ts
+└─ hooks/
+   └─ useProducts.ts
+```
 
+### Service
 
-Crear el servicio
-
-
- 
-typescript
+```ts
 // app/services/products.service.ts
 import { Product } from "@/app/lib/database";
 
@@ -402,27 +344,25 @@ export const productsService = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(product),
     });
+
     if (!res.ok) {
       const error = await res.json();
       throw new Error(error.error || "Error al crear producto");
     }
+
     return res.json();
   },
 
   delete: async (id: number): Promise<void> => {
-    const res = await fetch(`/api/products/${id}`, {
-      method: "DELETE",
-    });
+    const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error("Error al eliminar producto");
   },
 };
+```
 
+### Hooks con TanStack Query
 
-Crear los hooks con TanStack Query
-
-
- 
-typescript
+```ts
 // app/hooks/useProducts.ts
 "use client";
 
@@ -442,7 +382,6 @@ export function useCreateProduct() {
   return useMutation({
     mutationFn: productsService.create,
     onSuccess: () => {
-      // Invalida la cache para refrescar la lista
       queryClient.invalidateQueries({ queryKey: ["products"] });
     },
   });
@@ -458,13 +397,11 @@ export function useDeleteProduct() {
     },
   });
 }
+```
 
+### Componente UI
 
-Usar los hooks en un componente
-
-
- 
-typescript
+```tsx
 // app/components/ProductItem.tsx
 "use client";
 
@@ -472,7 +409,7 @@ import { useDeleteProduct } from "@/app/hooks/useProducts";
 
 interface ProductItemProps {
   product: {
-  id: number;
+    id: number;
     name: string;
     price: number;
     stock: number;
@@ -502,54 +439,50 @@ export function ProductItem({ product }: ProductItemProps) {
     </div>
   );
 }
+```
 
+### Flujo completo (DELETE)
 
-El flujo completo: De la UI a la base de datos
+1. El usuario hace clic en el botón del componente `ProductItem`.
+2. Se ejecuta `handleDelete()` y lanza la mutación.
+3. TanStack Query invoca `productsService.delete`.
+4. El servicio llama a `/api/products/[id]` con `DELETE`.
+5. La API Route valida el parámetro, usa `db.delete()` y devuelve una respuesta.
+6. La mutación marca éxito y llama a `invalidateQueries`.
+7. La UI se refresca automáticamente con la lista actualizada.
 
-Este es el recorrido que hace una petición cuando el usuario hace clic en "Eliminar producto":
+Roles claros en el flujo:
 
-Usuario hace clic en el botón dentro del componente ProductItem.
-Se ejecuta handleDelete que llama a deleteMutation.mutate().
-TanStack Query ejecuta la función definida en mutationFn, que es productsService.delete().
-El servicio hace un fetch a /api/products/[id] con método DELETE.
-La API Route (app/api/products/[id]/route.ts) recibe la petición:
-Valida el parámetro id.
-Llama a db.delete() para eliminar del JSON.
-La clase Database lee el archivo database.json, filtra el elemento y lo escribe de vuelta.
-La API Route devuelve una respuesta exitosa con status 200.
-El servicio parsea la respuesta y la devuelve.
-TanStack Query recibe el éxito y ejecuta onSuccess, que invalida la cache.
-El componente se re-renderiza mostrando la lista actualizada sin el producto eliminado.
-Este flujo respeta la arquitectura REST y separa claramente las responsabilidades:
+- **UI**: Interacción del usuario.
+- **Hooks**: Estado y sincronización con el servidor.
+- **Services**: Encapsulan las llamadas HTTP.
+- **API Routes**: Validan y procesan peticiones.
+- **Database**: Abstrae la persistencia.
 
-UI: Maneja la interacción del usuario.
-Hooks: Gestionan el estado y la sincronización con el servidor.
-Services: Encapsulan las llamadas HTTP.
-API Routes: Validan y procesan las peticiones.
-Database: Abstrae la persistencia de datos.
-Ejercicio propuesto
+## Ejercicio propuesto
 
-Modificación de la actividad anterior para:
+1. **Simular base de datos**
+   - Implementar la clase `Database` en `app/lib/database.ts`.
+   - Crear `database.json` en la raíz con `[]`.
 
-Crear la estructura de base de datos simulada:
-Implementar la clase Database en app/lib/database.ts.
-Crear el archivo database.json en la raíz del proyecto inicializado con [].
-Crear las API Routes:
-POST /api/favorites para agregar un pokémon a favoritos.
-DELETE /api/favorites/[id] para eliminarlo.
-Incluir validaciones apropiadas en ambos endpoints.
-Usar códigos de estado HTTP correctos (201, 400, 404, 409, 500).
-Crear la capa de servicios:
-Archivo app/services/favorites.service.ts con las funciones add y remove.
-Crear los hooks de TanStack Query:
-Archivo app/hooks/useFavorites.ts con useAddFavorite y useRemoveFavorite.
-Ambos hooks deben invalidar la query de favoritos al completarse.
-Modificar el componente de lista de Pokémons:
-Agregar un botón en cada item de la lista para agregar/quitar de favoritos.
-El botón debe cambiar su apariencia según si el pokémon ya está en favoritos.
-Mostrar un estado de carga mientras se procesa la petición.
-Manejar y mostrar errores si algo falla.
-(Opcional) Crear una página de favoritos:
-Una nueva ruta /favorites que muestre solo los pokémons favoritos.
-Usar el hook useFavorites() para obtener la lista.
-Incluir la opción de eliminar desde esta vista también.
+2. **API de favoritos**
+   - Implementar `POST /api/favorites` para agregar un pokémon.
+   - Implementar `DELETE /api/favorites/[id]` para eliminarlo.
+   - Incluir validaciones y códigos HTTP apropiados (`201`, `400`, `404`, `409`, `500`).
+
+3. **Capa de servicios**
+   - Crear `app/services/favorites.service.ts` con funciones `add` y `remove`.
+
+4. **Hooks con TanStack Query**
+   - Definir `app/hooks/useFavorites.ts` con `useAddFavorite` y `useRemoveFavorite`.
+   - Invalidar la query de favoritos al completarse las mutaciones.
+
+5. **Modificar la lista de Pokémons**
+   - Añadir botón para agregar/quitar de favoritos.
+   - Cambiar apariencia del botón según estado.
+   - Mostrar loaders y manejar errores.
+
+6. **(Opcional) Página de favoritos**
+   - Crear `/favorites` para listar solo los pokémons marcados.
+   - Usar `useFavorites()` para obtener la data.
+   - Permitir eliminar desde esta vista.
