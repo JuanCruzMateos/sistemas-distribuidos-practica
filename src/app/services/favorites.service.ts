@@ -8,6 +8,7 @@ async function handleErrorResponse(response: Response): Promise<never> {
     if (typeof error?.error === "string" && error.error.trim() !== "") {
       message = error.error;
     }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_) {
     // Ignorar errores al parsear respuesta
   }
