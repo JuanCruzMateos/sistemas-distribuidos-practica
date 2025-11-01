@@ -48,6 +48,12 @@ export default function RootLayout({
                 >
                   Main List
                 </Link>
+                <Link
+                  href="/favorites"
+                  className="text-white hover:opacity-80 px-3 py-2 rounded-md text-sm font-medium transition-opacity"
+                >
+                  Favorites
+                </Link>
               </div>
             </div>
           </nav>

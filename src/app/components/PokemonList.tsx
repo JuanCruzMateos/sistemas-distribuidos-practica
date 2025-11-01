@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PokemonItem from "./PokemonItem";
 import PokemonSkeleton from "./PokemonSkeleton";
 import PokemonPagination from "./PokemonPagination";
 import { usePokemonList } from "@/app/hooks/usePokemonList";
+import { useFavorites } from "@/app/hooks/useFavorites";
 import { Pokemon } from "@/app/types/pokemon";
 
 export default function PokemonList() {
@@ -16,6 +17,16 @@ export default function PokemonList() {
         limit: 30, // Fijo en 30
         offset: offset
     });
+
+    const {
+        data: favorites,
+        isLoading: isFavoritesLoading,
+        error: favoritesError,
+    } = useFavorites();
+
+    const favoriteIds = useMemo(() => {
+        return new Set((favorites ?? []).map((favorite) => favorite.id));
+    }, [favorites]);
 
     // Update allPokemons when new data arrives
     useEffect(() => {
@@ -81,7 +92,12 @@ export default function PokemonList() {
             {/* Pokemon Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {allPokemons.map((pokemon) => (
-                    <PokemonItem key={pokemon.id} pokemon={pokemon} />
+                    <PokemonItem
+                        key={pokemon.id}
+                        pokemon={pokemon}
+                        isFavorite={favoriteIds.has(pokemon.id)}
+                        isFavoritesLoading={isFavoritesLoading}
+                    />
                 ))}
             </div>
 
@@ -94,6 +110,16 @@ export default function PokemonList() {
             {isLoadingMore && (
                 <div className="mt-8">
                     <PokemonSkeleton count={6} />
+                </div>
+            )}
+
+            {favoritesError && (
+                <div className="mt-6">
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                        <p className="text-red-700 text-sm font-medium">
+                            {favoritesError.message || "No se pudieron cargar los favoritos. Aguarde e intente nuevamente."}
+                        </p>
+                    </div>
                 </div>
             )}
 
