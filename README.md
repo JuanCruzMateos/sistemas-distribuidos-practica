@@ -744,3 +744,56 @@ npm start
 # Ejecutar linter
 npm run lint
 ```
+
+## Docker
+
+El proyecto incluye configuración de Docker para facilitar el despliegue y ejecución en contenedores.
+
+### Requisitos
+
+- Docker instalado en tu máquina
+- Docker Compose instalado (generalmente viene con Docker Desktop)
+
+### Ejecución con Docker
+
+```bash
+# Construir y ejecutar el contenedor
+docker-compose up --build
+
+# Ejecutar en segundo plano (detached)
+docker-compose up -d --build
+
+# Detener el contenedor
+docker-compose down
+
+# Ver logs
+docker-compose logs -f
+```
+
+La aplicación estará disponible en `http://localhost:3000`
+
+### Características del Setup Docker
+
+- **Base Image:** Node 20 Alpine (imagen ligera y segura)
+- **Puerto:** 3000
+- **Volumen:** `database.json` montado para persistencia de datos
+- **Seguridad:** Parches de seguridad aplicados con `apk upgrade`
+- **Build optimizado:** Caché de dependencias para builds más rápidos
+
+### Comandos Docker Adicionales
+
+```bash
+# Reconstruir sin caché
+docker-compose build --no-cache
+
+# Ver contenedores en ejecución
+docker ps
+
+# Acceder al shell del contenedor
+docker-compose exec app sh
+
+# Eliminar contenedores y volúmenes
+docker-compose down -v
+```
+
+Para más información detallada sobre Docker, consulta el archivo `DOCKER.md`.

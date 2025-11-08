@@ -117,7 +117,7 @@ export default function FavoritesPage() {
             Todavía no agregaste pokémon a tu lista de favoritos.
           </p>
           <p className="mt-2 text-sm text-gray-500">
-            Volvé a la lista principal y usa el botón "Agregar a favoritos" para empezar a armarla.
+            Volvé a la lista principal y usa el botón &ldquo;Agregar a favoritos&rdquo; para empezar a armarla.
           </p>
         </div>
       )}

@@ -129,7 +129,6 @@ export default function PokemonFavouriteForm({ pokemon, onClose, onSubmit }: Pok
                                     disabled={isSubmitting}
                                     className="w-full px-4 py-3 rounded-md text-white font-semibold transition-all duration-200 hover:opacity-90 disabled:opacity-70 disabled:cursor-not-allowed"
                                     style={{ backgroundColor: "#134686" }}
-                                    onClick={() => handleSubmit(values)}
                                 >
                                     {isSubmitting ? "Agregando a favoritos..." : "Agregar a favoritos"}
                                 </button>
