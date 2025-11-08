@@ -590,3 +590,157 @@ export async function enviarContacto(prevState: any, formData: FormData) {
 ## Ejercicio propuesto
 
 Modificar el ejercicio de la actividad anterior, para ahora al momento de agregar a favoritos los Pokemons, poder ponerle un nombre y una descripcion al item favorito, a traves de un formulario que aparecera dentro de un modal (usar una libreria a eleccion para esto). Hacer validaciones razonables para cada campo, y mostrar errores en los campos si lo hubiera, que impidan el submit del formulario (puede utilizar las flags `dirty` y `isValid`).
+
+---
+
+## Librerías Utilizadas
+
+Esta sección documenta las principales librerías utilizadas en el proyecto y su propósito específico.
+
+### Framework y Core
+
+#### **Next.js** (`next@15.5.4`)
+- **Propósito:** Framework de React para aplicaciones web con renderizado del lado del servidor (SSR), generación de sitios estáticos (SSG) y rutas API.
+- **Uso en el proyecto:**
+  - Estructura de carpetas con App Router
+  - API Routes para endpoints backend (`/api/favorites`, `/api/pokemon`)
+  - Server Components y Client Components
+  - Enrutamiento automático basado en archivos
+  - Optimización de imágenes con `next/image`
+
+#### **React** (`react@18.3.1`)
+- **Propósito:** Librería para construir interfaces de usuario interactivas.
+- **Uso en el proyecto:**
+  - Componentes funcionales con hooks
+  - Estado local con `useState`
+  - Efectos con `useEffect`
+  - Memoización con `useMemo`
+  - Context API para estado global
+
+#### **TypeScript** (`typescript@5`)
+- **Propósito:** Superset de JavaScript que añade tipado estático.
+- **Uso en el proyecto:**
+  - Definición de tipos e interfaces (`Pokemon`, `Favorite`, etc.)
+  - Autocompletado y detección de errores en tiempo de desarrollo
+  - Mejor mantenibilidad del código
+
+### Gestión de Estado y Datos
+
+#### **TanStack Query** (`@tanstack/react-query@5.90.5`)
+- **Propósito:** Librería para gestión de estado asíncrono, caché y sincronización de datos del servidor.
+- **Uso en el proyecto:**
+  - `useQuery` para obtener listas de Pokémon y favoritos
+  - `useMutation` para agregar/eliminar favoritos
+  - Invalidación automática de caché después de mutaciones
+  - Estados de loading, error y success
+  - Reintento automático de peticiones fallidas
+  - **Archivos:** `src/app/hooks/usePokemonList.ts`, `src/app/hooks/useFavorites.ts`
+
+### Formularios y Validación
+
+#### **Formik** (`formik@2.4.8`)
+- **Propósito:** Librería para manejo de formularios en React.
+- **Uso en el proyecto:**
+  - Componente `<Formik>` para el contexto del formulario
+  - `<Form>` para manejo automático de `onSubmit`
+  - `<Field>` para campos de entrada controlados
+  - `<ErrorMessage>` para mostrar errores de validación
+  - Manejo de estados: `isSubmitting`, `isValid`, `dirty`, `errors`
+  - **Archivos:** `src/app/components/PokemonFavouriteForm.tsx`
+
+#### **Yup** (`yup@1.7.1`)
+- **Propósito:** Librería de validación de esquemas para JavaScript.
+- **Uso en el proyecto:**
+  - Validación de formularios con esquemas declarativos
+  - Reglas de validación: `min()`, `max()`, `required()`, `email()`, etc.
+  - Mensajes de error personalizados
+  - Integración perfecta con Formik
+  - **Archivos:** `src/app/components/PokemonFavouriteForm.tsx`
+
+### Componentes UI
+
+#### **Radix UI Dialog** (`@radix-ui/react-dialog@1.1.15`)
+- **Propósito:** Componente de modal/diálogo accesible y sin estilos.
+- **Uso en el proyecto:**
+  - `Dialog.Root` para el contexto del modal
+  - `Dialog.Trigger` para el botón que abre el modal
+  - `Dialog.Portal` para renderizar fuera del DOM padre
+  - `Dialog.Overlay` para el fondo oscuro
+  - `Dialog.Content` para el contenido del modal
+  - Accesibilidad nativa (manejo de foco, ESC para cerrar, etc.)
+  - **Archivos:** `src/app/components/PokemonFavouriteModal.tsx`
+
+#### **React Loading Skeleton** (`react-loading-skeleton@3.5.0`)
+- **Propósito:** Componente de skeleton screens para estados de carga.
+- **Uso en el proyecto:**
+  - Mostrar placeholders mientras se cargan los datos
+  - Mejorar la percepción de rendimiento
+  - **Archivos:** `src/app/components/PokemonSkeleton.tsx`
+
+### Estilos
+
+#### **Tailwind CSS** (`tailwindcss@4`)
+- **Propósito:** Framework de CSS utility-first para diseño rápido y consistente.
+- **Uso en el proyecto:**
+  - Clases utilitarias para estilos: `flex`, `grid`, `p-4`, `text-center`, etc.
+  - Sistema de colores personalizado
+  - Responsive design con prefijos: `sm:`, `md:`, `lg:`
+  - Estados: `hover:`, `focus:`, `disabled:`
+  - **Archivos:** Todos los componentes utilizan clases de Tailwind
+
+### HTTP y Comunicación
+
+#### **Axios** (`axios@1.12.2`)
+- **Propósito:** Cliente HTTP basado en promesas para navegador y Node.js.
+- **Uso en el proyecto:**
+  - Alternativa a `fetch` con mejor API
+  - Interceptores de peticiones y respuestas
+  - Transformación automática de datos
+  - **Archivos:** `src/app/services/pokemonService.ts`, `src/app/services/favorites.service.ts`
+
+### Desarrollo
+
+#### **ESLint** (`eslint@9`)
+- **Propósito:** Linter para identificar y reportar patrones problemáticos en código JavaScript/TypeScript.
+- **Uso en el proyecto:**
+  - Mantener consistencia en el código
+  - Detectar errores potenciales
+  - Configuración con `eslint-config-next`
+
+### Estructura de Capas
+
+```
+UI Components (React)
+    ↓
+Custom Hooks (TanStack Query)
+    ↓
+Services (Axios)
+    ↓
+API Routes (Next.js)
+    ↓
+Database (JSON File)
+```
+
+### Instalación de Dependencias
+
+Para instalar todas las dependencias del proyecto:
+
+```bash
+npm install
+```
+
+### Scripts Disponibles
+
+```bash
+# Desarrollo con Turbopack
+npm run dev
+
+# Build de producción
+npm run build
+
+# Iniciar servidor de producción
+npm start
+
+# Ejecutar linter
+npm run lint
+```
