@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import type { CSSProperties, MouseEvent } from "react";
 import { useAddFavorite, useRemoveFavorite } from "@/app/hooks/useFavorites";
 import { Pokemon } from "@/app/types/pokemon";
+import PokemonFavouriteModal from "./PokemonFavouriteModal";
 
 interface PokemonItemProps {
     pokemon: Pokemon;
@@ -30,31 +31,25 @@ export default function PokemonItem({ pokemon, isFavorite, isFavoritesLoading }:
 
     const pokemonTypes = useMemo(() => pokemon.types.map((type) => type.type.name), [pokemon.types]);
 
-    const handleToggleFavorite = (event: MouseEvent<HTMLButtonElement>) => {
+    const handleAddToFavorites = (nickname: string, description: string) => {
+        addFavoriteMutation.mutate({
+            id: pokemon.id,
+            name: pokemon.name,
+            image: mainImage,
+            types: pokemonTypes,
+            nickname,
+            description,
+        });
+    };
+
+    const handleRemoveFavorite = (event: MouseEvent<HTMLButtonElement>) => {
         event.preventDefault();
         event.stopPropagation();
 
         if (!isProcessing && !isFavoritesLoading) {
-            if (isFavorite) {
-                removeFavoriteMutation.mutate(pokemon.id);
-            } else {
-                addFavoriteMutation.mutate({
-                    id: pokemon.id,
-                    name: pokemon.name,
-                    image: mainImage,
-                    types: pokemonTypes,
-                });
-            }
+            removeFavoriteMutation.mutate(pokemon.id);
         }
     };
-
-    const buttonLabel = isFavoritesLoading
-        ? "Cargando favoritos..."
-        : isProcessing
-            ? "Procesando..."
-            : isFavorite
-                ? "Quitar de favoritos"
-                : "Agregar a favoritos";
 
     return (
         <Link
@@ -120,15 +115,18 @@ export default function PokemonItem({ pokemon, isFavorite, isFavoritesLoading }:
                 ))}
             </div>
 
-            <button
-                onClick={handleToggleFavorite}
-                disabled={isProcessing || isFavoritesLoading}
-                className={`mt-2 w-full px-3 py-2 rounded-md text-sm font-semibold transition-colors ${isFavorite ? "bg-red-500 hover:bg-red-600 text-white" : "bg-green-500 hover:bg-green-600 text-white"
-                    } ${isProcessing || isFavoritesLoading ? "opacity-70 cursor-not-allowed" : ""
-                    }`}
-            >
-                {buttonLabel}
-            </button>
+            {isFavorite ? (
+                <button
+                    onClick={handleRemoveFavorite}
+                    disabled={isProcessing || isFavoritesLoading}
+                    className="mt-2 w-full px-3 py-2 rounded-md text-white font-semibold transition-all duration-200 hover:opacity-90 disabled:opacity-70 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: "#ed3f27" }}
+                >
+                    {isProcessing ? "Quitando..." : "Quitar de favoritos"}
+                </button>
+            ) : (
+                <PokemonFavouriteModal onSubmit={handleAddToFavorites} />
+            )}
 
             {mutationError && (
                 <p className="mt-2 text-sm text-red-600">{mutationError}</p>

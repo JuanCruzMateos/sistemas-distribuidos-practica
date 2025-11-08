@@ -1,488 +1,592 @@
-# API Routes en Next.js
+# ¿Cómo funcionan los formularios en HTML?
 
-Las API Routes de Next.js permiten definir endpoints de backend dentro de la misma aplicación, sin levantar un servidor separado. Cada archivo dentro de `app/api/` representa una ruta y expone funciones del lado del servidor que reciben una `Request` y devuelven una `Response`.
+Un formulario HTML es una estructura que permite al usuario ingresar datos y enviarlos a un servidor. En su forma más básica, un formulario tiene:
 
-## ¿Para qué sirven?
+- Campos de entrada (`<input>`, `<textarea>`, `<select>`) donde el usuario escribe o selecciona información.
+- Etiquetas (`<label>`) que describen cada campo.
+- Un botón de envío (`<button type="submit">`) que dispara el envío del formulario.
+- Una acción (atributo `action`) que indica a dónde enviar los datos.
+- Un método (atributo `method`) que indica cómo enviarlos (GET o POST).
 
-- Crear, leer, actualizar y eliminar datos (CRUD).
-- Validar información antes de procesarla.
-- Conectar con bases de datos u otros servicios.
-- Mantener lógica sensible en el servidor (API keys, tokens, etc.).
+## Ejemplo básico en HTML
 
-## Métodos HTTP frecuentes
-
-- **GET**: Lee datos (ej. listar productos).
-- **POST**: Crea un recurso (ej. añadir un producto al catálogo).
-- **PATCH**: Actualiza parcialmente (ej. cambiar precio).
-- **PUT**: Reemplaza completamente (ej. sobrescribir todos los datos).
-- **DELETE**: Elimina (ej. borrar producto por id).
-
-## Principios REST esenciales
-
-- **Recursos**: Cada recurso se identifica con una URL (ej. `/api/products`, `/api/products/25`).
-- **Verbos HTTP correctos**: GET para leer, POST para crear, DELETE para eliminar, etc.
-- **Stateless**: Cada request es independiente, no se guarda estado entre peticiones.
-- **Respuestas consistentes**: Usar códigos estándar (200, 201, 400, 404, 500...).
-
-## Crear una API Route básica
-
-```ts
-// app/api/products/route.ts
-import { NextResponse } from "next/server";
-
-export async function GET() {
-  return NextResponse.json({ message: "Lista de productos" });
-}
-
-export async function POST(request: Request) {
-  const body = await request.json();
-  return NextResponse.json({ message: "Producto creado", data: body });
-}
+```html
+<form action="/api/usuarios" method="POST">
+  <label for="nombre">Nombre:</label>
+  <input type="text" id="nombre" name="nombre" required />
+  
+  <label for="email">Email:</label>
+  <input type="email" id="email" name="email" required />
+  
+  <button type="submit">Enviar</button>
+</form>
 ```
 
-Cada función exportada (`GET`, `POST`, `PATCH`, `DELETE`, etc.) representa el handler para ese método HTTP.
+Cuando el usuario hace clic en "Enviar", el navegador:
 
-## Validar el cuerpo de la request
+- Recopila todos los valores de los campos.
+- Los envía a la URL especificada en `action`.
+- Recarga la página con la respuesta del servidor.
 
-```ts
-// app/api/products/route.ts
-import { NextResponse } from "next/server";
+**El problema:** Este comportamiento tradicional recarga toda la página, lo cual no es ideal para aplicaciones modernas donde queremos mantener el estado y ofrecer una experiencia más fluida.
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
+## Formularios en React: El enfoque "Controlled Components"
 
-    if (!body.name || !body.price) {
-      return NextResponse.json(
-        { error: "Faltan campos obligatorios: name y price" },
-        { status: 400 }
-      );
-    }
+En React, manejamos los formularios de manera diferente. En lugar de dejar que el navegador maneje el estado de los campos, nosotros controlamos ese estado usando `useState`.
 
-    if (typeof body.price !== "number" || body.price <= 0) {
-      return NextResponse.json(
-        { error: "price debe ser un número mayor a 0" },
-        { status: 400 }
-      );
-    }
+```tsx
+"use client";
 
-    return NextResponse.json(
-      { message: "Producto creado exitosamente", data: body },
-      { status: 201 }
-    );
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Error al procesar la solicitud" },
-      { status: 500 }
-    );
-  }
-}
-```
+import { useState } from "react";
 
-## Parámetros dinámicos en rutas
+export default function FormularioBasico() {
+  const [nombre, setNombre] = useState("");
+  const [email, setEmail] = useState("");
 
-```ts
-// app/api/products/[id]/route.ts
-import { NextResponse } from "next/server";
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault(); // Evita la recarga de la página
+    console.log({ nombre, email });
+    // Aquí enviaríamos los datos a una API
+  };
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: { id: string } }
-) {
-  const id = Number(params.id);
-
-  if (Number.isNaN(id)) {
-    return NextResponse.json(
-      { error: "El ID debe ser un número válido" },
-      { status: 400 }
-    );
-  }
-
-  // ... lógica para eliminar
-
-  return NextResponse.json(
-    { message: `Producto ${id} eliminado` },
-    { status: 200 }
+  return (
+    <form onSubmit={handleSubmit}>
+      <label>
+        Nombre:
+        <input
+          type="text"
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+        />
+      </label>
+      
+      <label>
+        Email:
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </label>
+      
+      <button type="submit">Enviar</button>
+    </form>
   );
 }
 ```
 
-## Simular una base de datos con JSON
+### Ventajas de este enfoque
 
-Creamos una clase `Database` que persiste la información en `database.json`.
+- Tenemos control total sobre los valores en todo momento.
+- Podemos validar en tiempo real mientras el usuario escribe.
+- No hay recarga de página.
+- Podemos manipular los datos antes de enviarlos.
 
-```ts
-// app/lib/database.ts
-import fs from "fs/promises";
-import path from "path";
+### Desventajas
 
-const DB_PATH = path.join(process.cwd(), "database.json");
+- Mucho código repetitivo (`useState`, `onChange` para cada campo).
+- Validaciones manuales que pueden volverse complejas.
+- Difícil de mantener cuando hay muchos campos.
 
-export interface Product {
-  id: number;
-  name: string;
-  price: number;
-  description: string;
-  stock: number;
-  createdAt: string;
-}
+## Librerías para facilitar el manejo de formularios
 
-class Database {
-  private async readDB(): Promise<Product[]> {
-    try {
-      const data = await fs.readFile(DB_PATH, "utf-8");
-      return JSON.parse(data);
-    } catch (error) {
-      return [];
-    }
-  }
+Para resolver los problemas del enfoque manual, existen varias librerías especializadas:
 
-  private async writeDB(data: Product[]): Promise<void> {
-    await fs.writeFile(DB_PATH, JSON.stringify(data, null, 2));
-  }
+### 1. Formik
 
-  async getAll(): Promise<Product[]> {
-    return this.readDB();
-  }
+La librería más popular y madura para formularios en React. Simplifica el manejo de estado, validaciones y envío de datos.
 
-  async getById(id: number): Promise<Product | undefined> {
-    const data = await this.readDB();
-    return data.find((item) => item.id === id);
-  }
+**Ventajas:**
 
-  async create(product: Omit<Product, "id" | "createdAt">): Promise<Product> {
-    const data = await this.readDB();
-    const newProduct: Product = {
-      id: data.length > 0 ? Math.max(...data.map((p) => p.id)) + 1 : 1,
-      ...product,
-      createdAt: new Date().toISOString(),
-    };
-    data.push(newProduct);
-    await this.writeDB(data);
-    return newProduct;
-  }
+- API simple y clara.
+- Excelente integración con librerías de validación como Yup.
+- Maneja errores automáticamente.
+- Reduce significativamente el código boilerplate.
+- Muy bien documentada y con gran comunidad.
 
-  async delete(id: number): Promise<boolean> {
-    const data = await this.readDB();
-    const filtered = data.filter((item) => item.id !== id);
+### 2. React Hook Form
 
-    if (filtered.length === data.length) {
-      return false;
-    }
+Una alternativa moderna y performante que utiliza refs en lugar de re-renders.
 
-    await this.writeDB(filtered);
-    return true;
-  }
+**Ventajas:**
 
-  async update(
-    id: number,
-    updates: Partial<Omit<Product, "id" | "createdAt">>
-  ): Promise<Product | null> {
-    const data = await this.readDB();
-    const index = data.findIndex((item) => item.id === id);
+- Muy rápida (menos re-renders).
+- API basada en hooks.
+- Menos código que Formik.
 
-    if (index === -1) {
-      return null;
-    }
+**Desventajas:**
 
-    data[index] = { ...data[index], ...updates };
-    await this.writeDB(data);
-    return data[index];
-  }
-}
+- Curva de aprendizaje un poco más pronunciada.
+- Menos intuitiva para validaciones complejas.
 
-export const db = new Database();
+### 3. React Final Form
+
+Similar a Formik pero con un enfoque más modular.
+
+Entre otros.
+
+## ¿Por qué elegir Formik + Yup?
+
+Para este curso, vamos a usar Formik + Yup por las siguientes razones:
+
+- Formik es intuitivo y fácil de aprender para principiantes.
+- Yup permite definir validaciones de forma declarativa y legible.
+- La integración entre ambas es perfecta y está muy bien documentada.
+- Es el estándar de la industria, lo encontrarán en muchos proyectos reales.
+- La sintaxis es muy similar al enfoque manual, facilitando la transición.
+
+## Validaciones con Yup
+
+Yup es una librería de validación de esquemas que nos permite definir reglas de validación de forma clara y reutilizable.
+
+### Instalación
+
+```bash
+npm install yup
 ```
 
-> **Nota**: `fs` solo funciona en el servidor. No importes esta clase en componentes cliente.
+### Ejemplo básico de esquema
 
-Inicializa el archivo `database.json` en la raíz del proyecto con `[]`:
+En un archivo aparte, por ejemplo dentro de `/validations/users.ts`:
 
-```json
-[]
+```typescript
+import * as Yup from "yup";
+
+const usuarioSchema = Yup.object().shape({
+  nombre: Yup.string()
+    .min(2, "El nombre debe tener al menos 2 caracteres")
+    .max(50, "El nombre no puede tener más de 50 caracteres")
+    .required("El nombre es obligatorio"),
+  
+  email: Yup.string()
+    .email("Debe ser un email válido")
+    .required("El email es obligatorio"),
+  
+  edad: Yup.number()
+    .min(18, "Debes ser mayor de edad")
+    .max(100, "Edad inválida")
+    .required("La edad es obligatoria"),
+  
+  password: Yup.string()
+    .min(8, "La contraseña debe tener al menos 8 caracteres")
+    .matches(/[A-Z]/, "Debe contener al menos una mayúscula")
+    .matches(/[0-9]/, "Debe contener al menos un número")
+    .required("La contraseña es obligatoria"),
+  
+  confirmarPassword: Yup.string()
+    .oneOf([Yup.ref("password")], "Las contraseñas no coinciden")
+    .required("Debes confirmar la contraseña"),
+  
+  terminos: Yup.boolean()
+    .oneOf([true], "Debes aceptar los términos y condiciones")
+    .required(),
+});
 ```
 
-## Endpoints completos de ejemplo
+### Yup ofrece muchos tipos y validaciones
 
-### GET `/api/products`
+- **String:** `min()`, `max()`, `email()`, `url()`, `matches()` (regex)
+- **Number:** `min()`, `max()`, `positive()`, `integer()`
+- **Boolean:** `oneOf()`
+- **Date:** `min()`, `max()`
+- **Array:** `min()`, `max()`, `of()` (tipo de elementos)
+- **Object:** `shape()` (estructura del objeto)
 
-```ts
-import { NextResponse } from "next/server";
-import { db } from "@/app/lib/database";
+También soporta validaciones personalizadas con `.test()`.
 
-export async function GET() {
-  try {
-    const products = await db.getAll();
-    return NextResponse.json(products, { status: 200 });
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Error al obtener productos" },
-      { status: 500 }
-    );
-  }
-}
+## Formularios con Formik + Yup
+
+### Instalación
+
+```bash
+npm install formik yup
 ```
 
-### POST `/api/products`
-
-```ts
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-
-    if (!body.name || !body.price || body.stock === undefined) {
-      return NextResponse.json(
-        { error: "Faltan campos obligatorios: name, price, stock" },
-        { status: 400 }
-      );
-    }
-
-    if (body.price <= 0) {
-      return NextResponse.json(
-        { error: "El precio debe ser mayor a 0" },
-        { status: 400 }
-      );
-    }
-
-    const newProduct = await db.create({
-      name: body.name,
-      price: body.price,
-      description: body.description || "",
-      stock: body.stock,
-    });
-
-    return NextResponse.json(newProduct, { status: 201 });
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Error al crear producto" },
-      { status: 500 }
-    );
-  }
-}
-```
-
-### DELETE `/api/products/[id]`
-
-```ts
-export async function DELETE(
-  _request: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const id = Number(params.id);
-
-    if (Number.isNaN(id)) {
-      return NextResponse.json(
-        { error: "ID inválido" },
-        { status: 400 }
-      );
-    }
-
-    const deleted = await db.delete(id);
-
-    if (!deleted) {
-      return NextResponse.json(
-        { error: "Producto no encontrado" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(
-      { message: "Producto eliminado correctamente" },
-      { status: 200 }
-    );
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Error al eliminar producto" },
-      { status: 500 }
-    );
-  }
-}
-```
-
-## Integración con TanStack Query
-
-Cadena completa: **UI → TanStack Query → Service → API Route → Database**.
-
-### Estructura sugerida
-
-```text
-app/
-├─ api/
-│  └─ products/
-│     ├─ route.ts
-│     └─ [id]/route.ts
-├─ lib/
-│  └─ database.ts
-├─ services/
-│  └─ products.service.ts
-└─ hooks/
-   └─ useProducts.ts
-```
-
-### Service
-
-```ts
-// app/services/products.service.ts
-import { Product } from "@/app/lib/database";
-
-export const productsService = {
-  getAll: async (): Promise<Product[]> => {
-    const res = await fetch("/api/products");
-    if (!res.ok) throw new Error("Error al obtener productos");
-    return res.json();
-  },
-
-  create: async (product: {
-    name: string;
-    price: number;
-    description: string;
-    stock: number;
-  }): Promise<Product> => {
-    const res = await fetch("/api/products", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(product),
-    });
-
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error || "Error al crear producto");
-    }
-
-    return res.json();
-  },
-
-  delete: async (id: number): Promise<void> => {
-    const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Error al eliminar producto");
-  },
-};
-```
-
-### Hooks con TanStack Query
-
-```ts
-// app/hooks/useProducts.ts
-"use client";
-
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { productsService } from "@/app/services/products.service";
-
-export function useProducts() {
-  return useQuery({
-    queryKey: ["products"],
-    queryFn: productsService.getAll,
-  });
-}
-
-export function useCreateProduct() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: productsService.create,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-    },
-  });
-}
-
-export function useDeleteProduct() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: productsService.delete,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-    },
-  });
-}
-```
-
-### Componente UI
+### Ejemplo completo: Formulario de registro
 
 ```tsx
-// app/components/ProductItem.tsx
 "use client";
 
-import { useDeleteProduct } from "@/app/hooks/useProducts";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import * as Yup from "yup";
 
-interface ProductItemProps {
-  product: {
-    id: number;
-    name: string;
-    price: number;
-    stock: number;
-  };
+// 1. Definir el esquema de validación
+const registroSchema = Yup.object().shape({
+  nombre: Yup.string()
+    .min(2, "Muy corto")
+    .max(50, "Muy largo")
+    .required("Requerido"),
+  email: Yup.string()
+    .email("Email inválido")
+    .required("Requerido"),
+  edad: Yup.number()
+    .min(18, "Debes ser mayor de edad")
+    .required("Requerido"),
+  password: Yup.string()
+    .min(8, "Mínimo 8 caracteres")
+    .required("Requerido"),
+});
+
+// 2. Definir el tipo de los valores del formulario
+interface FormValues {
+  nombre: string;
+  email: string;
+  edad: number | "";
+  password: string;
 }
 
-export function ProductItem({ product }: ProductItemProps) {
-  const deleteMutation = useDeleteProduct();
-
-  const handleDelete = () => {
-    if (confirm(`¿Estás seguro de eliminar ${product.name}?`)) {
-      deleteMutation.mutate(product.id);
-    }
+export default function FormularioRegistro() {
+  // 3. Valores iniciales
+  const initialValues: FormValues = {
+    nombre: "",
+    email: "",
+    edad: "",
+    password: "",
   };
 
-  const isLoading = deleteMutation.isPending;
+  // 4. Función que se ejecuta al enviar
+  const handleSubmit = async (
+    values: FormValues,
+    { setSubmitting, resetForm }: any
+  ) => {
+    try {
+      // Aquí enviaríamos los datos a nuestra API
+    } catch (error) {
+      alert("Error al registrar usuario");
+    } finally {
+      setSubmitting(false); // Desactiva el estado de "enviando"
+    }
+  };
 
   return (
     <div>
-      <h3>{product.name}</h3>
-      <p>Precio: ${product.price}</p>
-      <p>Stock: {product.stock} unidades</p>
-      <button onClick={handleDelete} disabled={isLoading}>
-        {isLoading ? "Eliminando..." : "🗑️ Eliminar"}
-      </button>
-      {deleteMutation.isError && <p>Error: {deleteMutation.error.message}</p>}
+      <h1>Registro de Usuario</h1>
+      
+      <Formik
+        initialValues={initialValues}
+        validationSchema={registroSchema}
+        onSubmit={handleSubmit}
+      >
+        {({ isSubmitting, errors, touched }) => (
+          <Form>
+            <div>
+              <label htmlFor="nombre">Nombre</label>
+              <Field
+                type="text"
+                id="nombre"
+                name="nombre"
+                placeholder="Tu nombre"
+              />
+              <ErrorMessage name="nombre" component="div" className="error" />
+            </div>
+
+            <div>
+              <label htmlFor="email">Email</label>
+              <Field
+                type="email"
+                id="email"
+                name="email"
+                placeholder="tu@email.com"
+              />
+              <ErrorMessage name="email" component="div" className="error" />
+            </div>
+
+            <div>
+              <label htmlFor="edad">Edad</label>
+              <Field
+                type="number"
+                id="edad"
+                name="edad"
+                placeholder="18"
+              />
+              <ErrorMessage name="edad" component="div" className="error" />
+            </div>
+
+            <div>
+              <label htmlFor="password">Contraseña</label>
+              <Field
+                type="password"
+                id="password"
+                name="password"
+                placeholder="********"
+              />
+              <ErrorMessage name="password" component="div" className="error" />
+            </div>
+
+            <button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Registrando..." : "Registrar"}
+            </button>
+          </Form>
+        )}
+      </Formik>
     </div>
   );
 }
 ```
 
-### Flujo completo (DELETE)
+### Componentes clave de Formik
 
-1. El usuario hace clic en el botón del componente `ProductItem`.
-2. Se ejecuta `handleDelete()` y lanza la mutación.
-3. TanStack Query invoca `productsService.delete`.
-4. El servicio llama a `/api/products/[id]` con `DELETE`.
-5. La API Route valida el parámetro, usa `db.delete()` y devuelve una respuesta.
-6. La mutación marca éxito y llama a `invalidateQueries`.
-7. La UI se refresca automáticamente con la lista actualizada.
+- **`<Formik>`:** El contenedor principal. Recibe `initialValues`, `validationSchema` y `onSubmit`.
+- **`<Form>`:** Reemplaza al `<form>` nativo y maneja automáticamente el `onSubmit`.
+- **`<Field>`:** Un campo de entrada que se conecta automáticamente al estado de Formik.
+- **`<ErrorMessage>`:** Muestra el mensaje de error del campo especificado.
 
-Roles claros en el flujo:
+### Props útiles del render prop de Formik
 
-- **UI**: Interacción del usuario.
-- **Hooks**: Estado y sincronización con el servidor.
-- **Services**: Encapsulan las llamadas HTTP.
-- **API Routes**: Validan y procesan peticiones.
-- **Database**: Abstrae la persistencia.
+```tsx
+{({ 
+  values,        // Valores actuales del formulario
+  errors,        // Errores de validación
+  touched,       // Campos que el usuario ha tocado
+  isSubmitting,  // Si el formulario se está enviando
+  isValid,       // Si el formulario es válido
+  setFieldValue, // Función para cambiar un valor manualmente
+  resetForm,     // Función para resetear el formulario
+}) => (
+  <Form>
+    {/* ... */}
+  </Form>
+)}
+```
+
+## Formularios en Next.js: Client vs Server
+
+Hasta ahora, lo que vimos de Formik + Yup es aplicable para React, pero Next.js ofrece dos enfoques para manejar formularios, dependiendo de dónde queremos que se procese la lógica.
+
+### 1. Formularios del lado del cliente (Client-side)
+
+Este es el enfoque que hemos visto hasta ahora. El formulario se renderiza en el navegador y usa JavaScript para manejar el envío.
+
+**Cuándo usarlo:**
+
+- Cuando necesitas validaciones en tiempo real.
+- Para formularios con lógica compleja del lado del cliente.
+- Cuando el formulario es parte de una interfaz altamente interactiva.
+
+**Ejemplo básico:**
+
+```tsx
+"use client";
+
+import { useState } from "react";
+
+export default function FormularioCliente() {
+  const [resultado, setResultado] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
+    const response = await fetch("/api/contacto", {
+      method: "POST",
+      body: JSON.stringify({
+        nombre: formData.get("nombre"),
+        mensaje: formData.get("mensaje"),
+      }),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const data = await response.json();
+    setResultado(data.message);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input type="text" name="nombre" required />
+      <textarea name="mensaje" required />
+      <button type="submit">Enviar</button>
+      {resultado && <p>{resultado}</p>}
+    </form>
+  );
+}
+```
+
+### 2. Formularios del lado del servidor (Server-side) con Server Actions
+
+Next.js 14+ introduce Server Actions, que permiten ejecutar código del servidor directamente desde un formulario sin necesidad de crear una API Route.
+
+**Cuándo usarlo:**
+
+- Para formularios simples sin mucha interactividad.
+- Cuando queremos mejor SEO (el formulario funciona sin JavaScript).
+- Para reducir el JavaScript enviado al cliente.
+- Cuando trabajamos principalmente con Server Components.
+
+**Ejemplo con Server Actions:**
+
+```typescript
+// app/actions/contacto.ts
+"use server";
+
+import { db } from "@/app/lib/database";
+
+export async function enviarContacto(formData: FormData) {
+  const nombre = formData.get("nombre") as string;
+  const email = formData.get("email") as string;
+  const mensaje = formData.get("mensaje") as string;
+
+  // Validaciones básicas
+  if (!nombre || !email || !mensaje) {
+    return { success: false, error: "Todos los campos son obligatorios" };
+  }
+
+  if (!email.includes("@")) {
+    return { success: false, error: "Email inválido" };
+  }
+
+  try {
+    // Guardar en la base de datos
+    await db.create({
+      nombre,
+      email,
+      mensaje,
+      fecha: new Date().toISOString(),
+    });
+
+    return { success: true, message: "Mensaje enviado correctamente" };
+  } catch (error) {
+    return { success: false, error: "Error al enviar el mensaje" };
+  }
+}
+```
+
+```tsx
+// app/contacto/page.tsx
+import { enviarContacto } from "@/app/actions/contacto";
+
+export default function FormularioServidor() {
+  return (
+    <form action={enviarContacto}>
+      <div>
+        <label htmlFor="nombre">Nombre</label>
+        <input type="text" id="nombre" name="nombre" required />
+      </div>
+
+      <div>
+        <label htmlFor="email">Email</label>
+        <input type="email" id="email" name="email" required />
+      </div>
+
+      <div>
+        <label htmlFor="mensaje">Mensaje</label>
+        <textarea id="mensaje" name="mensaje" required />
+      </div>
+
+      <button type="submit">Enviar</button>
+    </form>
+  );
+}
+```
+
+### Server Actions con useFormState (para mostrar errores)
+
+Para tener feedback visual en un Server Action, usamos el hook `useFormState`:
+
+```typescript
+// app/actions/contacto.ts
+"use server";
+
+export async function enviarContacto(prevState: any, formData: FormData) {
+  const nombre = formData.get("nombre") as string;
+  const email = formData.get("email") as string;
+
+  if (!nombre || nombre.length < 2) {
+    return { success: false, error: "El nombre debe tener al menos 2 caracteres" };
+  }
+
+  if (!email.includes("@")) {
+    return { success: false, error: "Email inválido" };
+  }
+
+  // Guardar...
+  
+  return { success: true, message: "¡Mensaje enviado!" };
+}
+```
+
+```tsx
+// app/contacto/page.tsx
+"use client";
+
+import { useFormState } from "react-dom";
+import { enviarContacto } from "@/app/actions/contacto";
+
+export default function FormularioConEstado() {
+  const [state, formAction] = useFormState(enviarContacto, null);
+
+  return (
+    <form action={formAction}>
+      <input type="text" name="nombre" required />
+      <input type="email" name="email" required />
+      <button type="submit">Enviar</button>
+      
+      {state?.success && <p style={{ color: "green" }}>{state.message}</p>}
+      {state?.error && <p style={{ color: "red" }}>{state.error}</p>}
+    </form>
+  );
+}
+```
+
+### Validaciones en Server Actions con Zod
+
+Para validaciones más robustas en Server Actions, podemos usar Zod (similar a Yup pero optimizado para TypeScript):
+
+```bash
+npm install zod
+```
+
+```typescript
+// app/actions/contacto.ts
+"use server";
+
+import { z } from "zod";
+
+const contactoSchema = z.object({
+  nombre: z.string().min(2, "Mínimo 2 caracteres").max(50),
+  email: z.string().email("Email inválido"),
+  mensaje: z.string().min(10, "El mensaje debe tener al menos 10 caracteres"),
+});
+
+export async function enviarContacto(prevState: any, formData: FormData) {
+  // Parsear y validar
+  const validacion = contactoSchema.safeParse({
+    nombre: formData.get("nombre"),
+    email: formData.get("email"),
+    mensaje: formData.get("mensaje"),
+  });
+
+  if (!validacion.success) {
+    return {
+      success: false,
+      errors: validacion.error.flatten().fieldErrors,
+    };
+  }
+
+  // Si es válido, usar los datos
+  const { nombre, email, mensaje } = validacion.data;
+
+  // Guardar en DB...
+  
+  return { success: true, message: "Mensaje enviado" };
+}
+```
+
+## Comparación: Client-side vs Server-side
+
+| Aspecto | Client-side (Formik + Yup) | Server-side (Server Actions) |
+|---------|---------------------------|------------------------------|
+| **JavaScript** | Mucho JS en el cliente | Mínimo JS en el cliente |
+| **Validaciones en tiempo real** | Sí | No (solo al enviar) |
+| **SEO** | Requiere JS habilitado | Funciona sin JS |
+| **Complejidad** | Más código en el frontend | Menos código, más simple |
+| **Use case ideal** | Formularios complejos e interactivos | Formularios simples y estáticos |
+| **Performance** | Más re-renders | Menos carga en el cliente |
+
+### Recomendación
+
+- Usar **Formik + Yup** para formularios complejos con mucha interactividad.
+- Usar **Server Actions** para formularios simples donde la progresividad es importante.
 
 ## Ejercicio propuesto
 
-1. **Simular base de datos**
-   - Implementar la clase `Database` en `app/lib/database.ts`.
-   - Crear `database.json` en la raíz con `[]`.
-
-2. **API de favoritos**
-   - Implementar `POST /api/favorites` para agregar un pokémon.
-   - Implementar `DELETE /api/favorites/[id]` para eliminarlo.
-   - Incluir validaciones y códigos HTTP apropiados (`201`, `400`, `404`, `409`, `500`).
-
-3. **Capa de servicios**
-   - Crear `app/services/favorites.service.ts` con funciones `add` y `remove`.
-
-4. **Hooks con TanStack Query**
-   - Definir `app/hooks/useFavorites.ts` con `useAddFavorite` y `useRemoveFavorite`.
-   - Invalidar la query de favoritos al completarse las mutaciones.
-
-5. **Modificar la lista de Pokémons**
-   - Añadir botón para agregar/quitar de favoritos.
-   - Cambiar apariencia del botón según estado.
-   - Mostrar loaders y manejar errores.
-
-6. **(Opcional) Página de favoritos**
-   - Crear `/favorites` para listar solo los pokémons marcados.
-   - Usar `useFavorites()` para obtener la data.
-   - Permitir eliminar desde esta vista.
+Modificar el ejercicio de la actividad anterior, para ahora al momento de agregar a favoritos los Pokemons, poder ponerle un nombre y una descripcion al item favorito, a traves de un formulario que aparecera dentro de un modal (usar una libreria a eleccion para esto). Hacer validaciones razonables para cada campo, y mostrar errores en los campos si lo hubiera, que impidan el submit del formulario (puede utilizar las flags `dirty` y `isValid`).
