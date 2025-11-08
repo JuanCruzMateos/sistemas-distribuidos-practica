@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchPokemonListWithDetails, fetchPokemonById, PokemonListParams } from "@/app/services/pokemonService";
+import { fetchPokemonListWithDetails, fetchPokemonById, PokemonListParams } from "@/app/services/pokemon.service";
 import { Pokemon } from "@/app/types/pokemon";
 
 /**

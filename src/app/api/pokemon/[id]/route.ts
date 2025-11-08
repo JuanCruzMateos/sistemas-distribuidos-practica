@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchPokemonById } from "@/app/services/pokemonService";
+import { fetchPokemonById } from "@/app/services/pokemon.service";
 
 interface RouteParams {
   params: Promise<{ id: string }>;

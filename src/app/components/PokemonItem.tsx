@@ -32,6 +32,7 @@ export default function PokemonItem({ pokemon, isFavorite, isFavoritesLoading }:
     const pokemonTypes = useMemo(() => pokemon.types.map((type) => type.type.name), [pokemon.types]);
 
     const handleAddToFavorites = (nickname: string, description: string) => {
+        console.log("Adding to favorites:", { nickname, description });
         addFavoriteMutation.mutate({
             id: pokemon.id,
             name: pokemon.name,
@@ -125,7 +126,7 @@ export default function PokemonItem({ pokemon, isFavorite, isFavoritesLoading }:
                     {isProcessing ? "Quitando..." : "Quitar de favoritos"}
                 </button>
             ) : (
-                <PokemonFavouriteModal onSubmit={handleAddToFavorites} />
+                <PokemonFavouriteModal pokemon={pokemon} onSubmit={handleAddToFavorites} />
             )}
 
             {mutationError && (

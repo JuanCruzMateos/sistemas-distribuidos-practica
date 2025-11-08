@@ -6,6 +6,8 @@ interface FavoriteRequestBody {
   name: string;
   image: string;
   types: string[];
+  nickname: string;
+  description: string;
 }
 
 export async function GET() {
@@ -24,7 +26,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body: Partial<FavoriteRequestBody> = await request.json();
-    const { id, name, image, types } = body;
+    const { id, name, image, types, nickname, description } = body;
 
     if (
       typeof id !== "number" ||
@@ -49,6 +51,8 @@ export async function POST(request: Request) {
       name: name.trim(),
       image: image.trim(),
       types: types.map((type) => type.trim()),
+      nickname: nickname?.trim() ?? "",
+      description: description?.trim() ?? "",
     });
 
     return NextResponse.json(favorite, { status: 201 });

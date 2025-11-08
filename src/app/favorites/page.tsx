@@ -75,6 +75,8 @@ export default function FavoritesPage() {
                       <h2 className="text-xl font-semibold capitalize" style={{ color: "#134686" }}>
                         {favorite.name}
                       </h2>
+                      <p className="text-sm text-gray-500">{favorite.nickname}</p>
+                      <p className="text-sm text-gray-500">{favorite.description}</p>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {favorite.types.map((type) => (
                           <span
