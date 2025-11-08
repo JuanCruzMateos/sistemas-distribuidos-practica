@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import PokemonFavouriteForm from "./PokemonFavouriteForm";
 import { Pokemon } from "../types/pokemon";
@@ -11,7 +11,7 @@ interface PokemonFavouriteModalProps {
 }
 
 export default function PokemonFavouriteModal({ pokemon, onSubmit }: PokemonFavouriteModalProps) {
-	const [open, setOpen] = React.useState(false);
+	const [open, setOpen] = useState(false);
 
 	const handleSubmit = (nickname: string, description: string) => {
 		onSubmit(nickname, description);
